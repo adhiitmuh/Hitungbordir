@@ -79,7 +79,7 @@ const useAppStore = create(
       getCatatanByOperator: (operatorId) =>
         get().catatanProduksi.filter((c) => c.operatorId === operatorId),
     }),
-    { name: 'hitungbordir-storage' }
+    { name: 'harmonibordir-storage' }
   )
 )
 

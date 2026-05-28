@@ -22,7 +22,7 @@ export default function Layout({ children }) {
 
   const isAdmin = role === 'admin'
   const navItems = allNavItems.filter((n) => isAdmin || !n.adminOnly)
-  const currentPage = allNavItems.find((n) => n.to === location.pathname)?.label ?? 'HitungBordir'
+  const currentPage = allNavItems.find((n) => n.to === location.pathname)?.label ?? 'Harmoni Bordir'
 
   function handleLogout() {
     logout()
@@ -47,7 +47,7 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-blue-800">
           <div>
-            <div className="font-bold text-lg leading-tight">HitungBordir</div>
+            <div className="font-bold text-lg leading-tight">Harmoni Bordir</div>
             <div className="text-blue-300 text-xs">Kalkulator Produksi</div>
           </div>
           <button className="lg:hidden text-blue-300" onClick={() => setSidebarOpen(false)}>
@@ -98,7 +98,7 @@ export default function Layout({ children }) {
             <LogOut size={18} />
             Keluar
           </button>
-          <div className="text-blue-500 text-xs mt-2 px-3">v0.1.0 · HitungBordir</div>
+          <div className="text-blue-500 text-xs mt-2 px-3">v0.1.0 · Harmoni Bordir</div>
         </div>
       </aside>
 

@@ -39,7 +39,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="text-3xl font-bold text-white">HitungBordir</div>
+          <div className="text-3xl font-bold text-white">Harmoni Bordir</div>
           <div className="text-blue-200 text-sm mt-1">Kalkulator Produksi Bordir</div>
         </div>
 
