@@ -1,35 +1,335 @@
 import { useMemo, useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts'
-import { TrendingUp, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ReferenceLine, Cell, LineChart, Line, Legend
+} from 'recharts'
+import {
+  TrendingUp, AlertTriangle, CheckCircle2, Info,
+  Zap, Clock, Gauge, ChevronDown, ChevronUp
+} from 'lucide-react'
 import useAppStore from '../store/appStore'
 import {
   hitungKapasitasTeoritis, hitungEfisiensi, statusPerforma,
-  analisisNormalitas, formatAngka, formatRupiah
+  analisisNormalitas, hitungSelisihMenit, hitungWaktuAktif,
+  hitungUtilisasi, hitungRpmEfektif, evaluasiKinerja,
+  resolveJamKerja, formatAngka, formatRupiah
 } from '../utils/calculations'
 
+// ── Badge helpers ──────────────────────────────────────────────
 function BadgeStatus({ status }) {
   if (status === 'baik') return <span className="badge-good"><CheckCircle2 size={11} />Baik ≥80%</span>
   if (status === 'cukup') return <span className="badge-warn"><AlertTriangle size={11} />Cukup 60–79%</span>
   return <span className="badge-bad"><AlertTriangle size={11} />Rendah &lt;60%</span>
 }
 
-function BadgeNormal({ normal }) {
-  if (normal === null) return null
-  return normal
-    ? <span className="badge-good"><CheckCircle2 size={11} />Normal</span>
-    : <span className="badge-bad"><AlertTriangle size={11} />Di bawah rata-rata</span>
+const VERDICT_CONFIG = {
+  optimal:           { label: 'Sudah Optimal',         cls: 'bg-green-100 text-green-700',  icon: CheckCircle2 },
+  bisa_ditingkatkan: { label: 'Bisa Ditingkatkan',     cls: 'bg-blue-100 text-blue-700',    icon: TrendingUp },
+  cek_mesin:         { label: 'Cek Mesin / Speed',     cls: 'bg-yellow-100 text-yellow-700',icon: Gauge },
+  cek_kualitas:      { label: 'Cek Kualitas / Reject', cls: 'bg-red-100 text-red-700',      icon: AlertTriangle },
+  perlu_perhatian:   { label: 'Perlu Perhatian',       cls: 'bg-orange-100 text-orange-700',icon: AlertTriangle },
+}
+
+function BadgeVerdict({ verdict }) {
+  const cfg = VERDICT_CONFIG[verdict] ?? VERDICT_CONFIG.bisa_ditingkatkan
+  const Icon = cfg.icon
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.cls}`}>
+      <Icon size={11} />{cfg.label}
+    </span>
+  )
 }
 
 const RENTANG = [
-  { label: '7 Hari', hari: 7 },
+  { label: '7 Hari',  hari: 7 },
   { label: '14 Hari', hari: 14 },
   { label: '30 Hari', hari: 30 },
 ]
 
+// ── Proses data per operator ───────────────────────────────────
+function prosesDataOperator(catatanFiltered, settings, getMesinById, getProdukById, getOperatorById) {
+  const map = {}
+
+  for (const c of catatanFiltered) {
+    const m = getMesinById(c.mesinId)
+    const p = getProdukById(c.produkId)
+    if (!m || !p) continue
+
+    const speed = c.kecepatan || m.rpm
+    const totalMin = hitungSelisihMenit(c.jamMulai, c.jamSelesai)
+    const aktifMin = hitungWaktuAktif(c.jamMulai, c.jamSelesai, c.menitBerhenti)
+    // Fallback untuk catatan lama yang hanya punya jamKerja
+    const jamKerjaFallback = resolveJamKerja(c)
+    const aktifMinEfektif = aktifMin > 0 ? aktifMin : jamKerjaFallback * 60
+
+    const kapasitas = hitungKapasitasTeoritis(aktifMinEfektif / 60, speed, p.stitchCount)
+    const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
+    const utilisasi = totalMin > 0 ? hitungUtilisasi(aktifMin, totalMin) : null
+    const rpmEfektif = aktifMinEfektif > 0
+      ? hitungRpmEfektif(c.aktual, p.stitchCount, aktifMinEfektif)
+      : null
+    const rpmMaks = m.rpm
+
+    if (!map[c.operatorId]) {
+      map[c.operatorId] = {
+        operatorId: c.operatorId,
+        totalAktual: 0, totalKapasitas: 0, totalReject: 0, totalCatatan: 0,
+        efisiensiList: [], utilisasiList: [], rpmEfektifList: [],
+        totalDowntimeMenit: 0, alasanList: [],
+        rpmMaksList: [],
+      }
+    }
+    const d = map[c.operatorId]
+    d.totalAktual += c.aktual
+    d.totalKapasitas += kapasitas
+    d.totalReject += c.reject ?? 0
+    d.totalCatatan++
+    d.efisiensiList.push(efisiensi)
+    if (utilisasi !== null) d.utilisasiList.push(utilisasi)
+    if (rpmEfektif !== null) d.rpmEfektifList.push(rpmEfektif)
+    d.totalDowntimeMenit += c.menitBerhenti ?? 0
+    if (c.alasanBerhenti) d.alasanList.push(c.alasanBerhenti)
+    d.rpmMaksList.push(rpmMaks)
+  }
+
+  const semuaEfisiensiRata = Object.values(map).map((d) =>
+    d.efisiensiList.reduce((a, b) => a + b, 0) / d.efisiensiList.length
+  )
+
+  return Object.values(map).map((d) => {
+    const efisiensiRata = d.efisiensiList.reduce((a, b) => a + b, 0) / d.efisiensiList.length
+    const utilisasiRata = d.utilisasiList.length
+      ? d.utilisasiList.reduce((a, b) => a + b, 0) / d.utilisasiList.length
+      : null
+    const rpmEfektifRata = d.rpmEfektifList.length
+      ? d.rpmEfektifList.reduce((a, b) => a + b, 0) / d.rpmEfektifList.length
+      : null
+    const rpmMaksRata = d.rpmMaksList.length
+      ? d.rpmMaksList.reduce((a, b) => a + b, 0) / d.rpmMaksList.length
+      : null
+    const rejectRate = d.totalAktual ? (d.totalReject / d.totalAktual) * 100 : 0
+    const normalitas = analisisNormalitas(efisiensiRata, semuaEfisiensiRata)
+    const op = getOperatorById(d.operatorId)
+
+    const evaluasi = evaluasiKinerja({
+      utilisasi: utilisasiRata ?? 80,
+      efisiensi: efisiensiRata,
+      rpmEfektif: rpmEfektifRata ?? 0,
+      rpmMaks: rpmMaksRata,
+      rejectRate,
+    })
+
+    return {
+      ...d, nama: op?.nama ?? `Operator (${d.operatorId})`,
+      efisiensiRata, utilisasiRata, rpmEfektifRata, rpmMaksRata,
+      rejectRate, normalitas, status: statusPerforma(efisiensiRata),
+      evaluasi,
+    }
+  }).sort((a, b) => b.efisiensiRata - a.efisiensiRata)
+}
+
+// ── Tab: Ringkasan ─────────────────────────────────────────────
+function TabRingkasan({ data, filterOp, setFilterOp, operator }) {
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 className="font-semibold text-gray-700 text-sm">Ringkasan Performa</h2>
+        <select className="input text-sm w-auto" value={filterOp} onChange={(e) => setFilterOp(e.target.value)}>
+          <option value="">Semua Operator</option>
+          {operator.map((o) => <option key={o.id} value={o.id}>{o.nama}</option>)}
+        </select>
+      </div>
+
+      {data.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-8">Tidak ada data dalam rentang ini.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
+                <th className="pb-2 font-medium">Operator</th>
+                <th className="pb-2 font-medium text-right">Aktual</th>
+                <th className="pb-2 font-medium text-right">Reject%</th>
+                <th className="pb-2 font-medium text-right">Utilisasi</th>
+                <th className="pb-2 font-medium text-right">Efisiensi</th>
+                <th className="pb-2 font-medium text-right">RPM Efektif</th>
+                <th className="pb-2 font-medium">Evaluasi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {data.map((r) => (
+                <tr key={r.operatorId} className="hover:bg-gray-50">
+                  <td className="py-3 font-medium text-gray-800">{r.nama}</td>
+                  <td className="py-3 text-right text-gray-600">{r.totalAktual.toLocaleString('id-ID')}</td>
+                  <td className="py-3 text-right">
+                    <span className={r.rejectRate > 5 ? 'text-red-500 font-medium' : 'text-gray-500'}>
+                      {formatAngka(r.rejectRate)}%
+                    </span>
+                  </td>
+                  <td className="py-3 text-right">
+                    {r.utilisasiRata !== null ? (
+                      <span className={r.utilisasiRata >= 75 ? 'text-green-600 font-medium' : r.utilisasiRata >= 60 ? 'text-amber-500' : 'text-red-500 font-medium'}>
+                        {formatAngka(r.utilisasiRata)}%
+                      </span>
+                    ) : <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${r.efisiensiRata >= 80 ? 'bg-green-400' : r.efisiensiRata >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                          style={{ width: `${Math.min(r.efisiensiRata, 100)}%` }}
+                        />
+                      </div>
+                      <span className="font-medium">{formatAngka(r.efisiensiRata)}%</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-right text-gray-600">
+                    {r.rpmEfektifRata !== null ? (
+                      <span>
+                        {Math.round(r.rpmEfektifRata)}
+                        {r.rpmMaksRata && (
+                          <span className="text-gray-300 text-xs">/{Math.round(r.rpmMaksRata)}</span>
+                        )}
+                      </span>
+                    ) : <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="py-3"><BadgeVerdict verdict={r.evaluasi.verdict} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Tab: Evaluasi per operator ─────────────────────────────────
+function KartuEvaluasi({ r }) {
+  const [open, setOpen] = useState(false)
+  const cfg = VERDICT_CONFIG[r.evaluasi.verdict] ?? VERDICT_CONFIG.bisa_ditingkatkan
+  const Icon = cfg.icon
+
+  return (
+    <div className="card border border-gray-100">
+      <button className="w-full flex items-center justify-between" onClick={() => setOpen(!open)}>
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${cfg.cls}`}><Icon size={16} /></div>
+          <div className="text-left">
+            <div className="font-semibold text-gray-800">{r.nama}</div>
+            <div className="text-xs text-gray-400">{r.totalCatatan} sesi · {r.totalAktual.toLocaleString('id-ID')} item</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <BadgeVerdict verdict={r.evaluasi.verdict} />
+          {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        </div>
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-4 border-t border-gray-50 pt-4">
+          {/* Metrik ringkas */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Efisiensi Output', val: `${formatAngka(r.efisiensiRata)}%`, ok: r.efisiensiRata >= 80 },
+              { label: 'Utilisasi Waktu', val: r.utilisasiRata !== null ? `${formatAngka(r.utilisasiRata)}%` : '—', ok: r.utilisasiRata === null || r.utilisasiRata >= 75 },
+              { label: 'RPM Efektif', val: r.rpmEfektifRata !== null ? `${Math.round(r.rpmEfektifRata)} / ${Math.round(r.rpmMaksRata ?? 0)}` : '—', ok: !r.rpmMaksRata || (r.rpmEfektifRata / r.rpmMaksRata) >= 0.7 },
+              { label: 'Reject Rate', val: `${formatAngka(r.rejectRate)}%`, ok: r.rejectRate <= 5 },
+            ].map(({ label, val, ok }) => (
+              <div key={label} className={`rounded-lg px-3 py-2.5 text-center ${ok ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div className="text-xs text-gray-500">{label}</div>
+                <div className={`font-bold text-lg ${ok ? 'text-green-700' : 'text-red-600'}`}>{val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Total downtime */}
+          {r.totalDowntimeMenit > 0 && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5 text-sm">
+              <Clock size={15} className="text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-amber-700">Total downtime: {r.totalDowntimeMenit} menit</strong>
+                {r.alasanList.length > 0 && (
+                  <div className="text-amber-600 text-xs mt-1">
+                    Alasan tercatat: {[...new Set(r.alasanList)].slice(0, 5).join(' · ')}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Rekomendasi */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+              <Zap size={14} className="text-blue-500" />
+              Rekomendasi Sistem
+            </div>
+            <ul className="space-y-1.5">
+              {r.evaluasi.rekomendasi.map((rek, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                  <span className="text-blue-400 shrink-0 mt-0.5">•</span>
+                  {rek}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Normalitas */}
+          {r.normalitas && (
+            <div className={`text-xs rounded-lg px-3 py-2 ${r.normalitas.normal ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+              <strong>Normalitas vs rekan:</strong>{' '}
+              {r.normalitas.normal
+                ? `Normal (z-score: ${formatAngka(r.normalitas.zscore, 2)})`
+                : `Di bawah rata-rata grup (z-score: ${formatAngka(r.normalitas.zscore, 2)}, rata-rata grup: ${formatAngka(r.normalitas.rata)}%)`}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TabEvaluasi({ data }) {
+  if (data.length === 0) {
+    return <p className="text-sm text-gray-400 text-center py-8">Tidak ada data untuk dievaluasi.</p>
+  }
+  return (
+    <div className="space-y-3">
+      {data.map((r) => <KartuEvaluasi key={r.operatorId} r={r} />)}
+    </div>
+  )
+}
+
+// ── Grafik tren harian ─────────────────────────────────────────
+function GrafikTren({ data, rpmMaks }) {
+  return (
+    <div className="card">
+      <h2 className="font-semibold text-gray-700 mb-3 text-sm">Tren Harian</h2>
+      <ResponsiveContainer width="100%" height={180}>
+        <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <XAxis dataKey="tgl" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} domain={[0, 110]} />
+          <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v, n) => [`${formatAngka(v)}%`, n]} />
+          <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+          <ReferenceLine y={80} stroke="#16a34a" strokeDasharray="4 2" />
+          <ReferenceLine y={60} stroke="#d97706" strokeDasharray="4 2" />
+          <Line type="monotone" dataKey="efisiensi" name="Efisiensi %" stroke="#3b82f6" dot={{ r: 3 }} strokeWidth={2} />
+          {data.some((d) => d.utilisasi !== null) && (
+            <Line type="monotone" dataKey="utilisasi" name="Utilisasi %" stroke="#10b981" dot={{ r: 3 }} strokeWidth={2} strokeDasharray="5 3" />
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+// ── Main page ──────────────────────────────────────────────────
 export default function LaporanOperator() {
-  const { catatanProduksi, operator, mesin, produk, settings, getMesinById, getProdukById, getOperatorById } = useAppStore()
+  const { catatanProduksi, operator, settings, getMesinById, getProdukById, getOperatorById } = useAppStore()
   const [rentangIdx, setRentangIdx] = useState(0)
   const [filterOp, setFilterOp] = useState('')
+  const [activeTab, setActiveTab] = useState('ringkasan') // 'ringkasan' | 'evaluasi'
 
   const hari = RENTANG[rentangIdx].hari
   const cutoff = new Date()
@@ -38,57 +338,16 @@ export default function LaporanOperator() {
 
   const catatanFiltered = catatanProduksi.filter((c) => c.tanggal >= cutoffStr)
 
-  const ringkasanPerOperator = useMemo(() => {
-    const map = {}
-    for (const c of catatanFiltered) {
-      const m = getMesinById(c.mesinId)
-      const p = getProdukById(c.produkId)
-      if (!m || !p) continue
-      const speed = c.kecepatan || m.rpm
-      const kapasitas = hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, speed, p.stitchCount)
-      const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
-      if (!map[c.operatorId]) {
-        map[c.operatorId] = {
-          operatorId: c.operatorId,
-          totalAktual: 0,
-          totalKapasitas: 0,
-          totalReject: 0,
-          totalCatatan: 0,
-          efisiensiList: [],
-        }
-      }
-      map[c.operatorId].totalAktual += c.aktual
-      map[c.operatorId].totalKapasitas += kapasitas
-      map[c.operatorId].totalReject += c.reject ?? 0
-      map[c.operatorId].totalCatatan++
-      map[c.operatorId].efisiensiList.push(efisiensi)
-    }
-
-    // Semua efisiensi untuk normalitas
-    const semuaEfisiensiRata = Object.values(map).map((d) =>
-      d.efisiensiList.reduce((a, b) => a + b, 0) / d.efisiensiList.length
-    )
-
-    return Object.values(map).map((d) => {
-      const efisiensiRata = d.efisiensiList.reduce((a, b) => a + b, 0) / d.efisiensiList.length
-      const normalitas = analisisNormalitas(efisiensiRata, semuaEfisiensiRata)
-      const op = getOperatorById(d.operatorId)
-      return {
-        ...d,
-        nama: op?.nama ?? `Operator (${d.operatorId})`,
-        efisiensiRata,
-        status: statusPerforma(efisiensiRata),
-        normalitas,
-        rejectRate: d.totalAktual ? (d.totalReject / d.totalAktual) * 100 : 0,
-      }
-    }).sort((a, b) => b.efisiensiRata - a.efisiensiRata)
-  }, [catatanFiltered, settings])
+  const semuaData = useMemo(
+    () => prosesDataOperator(catatanFiltered, settings, getMesinById, getProdukById, getOperatorById),
+    [catatanFiltered, settings]
+  )
 
   const dataTersaring = filterOp
-    ? ringkasanPerOperator.filter((r) => r.operatorId === filterOp)
-    : ringkasanPerOperator
+    ? semuaData.filter((r) => r.operatorId === filterOp)
+    : semuaData
 
-  // Grafik tren per hari untuk operator terpilih
+  // Tren harian untuk operator terpilih
   const trenData = useMemo(() => {
     if (!filterOp) return []
     const catOp = catatanFiltered.filter((c) => c.operatorId === filterOp)
@@ -98,20 +357,25 @@ export default function LaporanOperator() {
       const p = getProdukById(c.produkId)
       if (!m || !p) continue
       const speed = c.kecepatan || m.rpm
-      const kapasitas = hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, speed, p.stitchCount)
+      const totalMin = hitungSelisihMenit(c.jamMulai, c.jamSelesai)
+      const aktifMin = hitungWaktuAktif(c.jamMulai, c.jamSelesai, c.menitBerhenti)
+      const aktifEfektif = aktifMin > 0 ? aktifMin : resolveJamKerja(c) * 60
+      const kapasitas = hitungKapasitasTeoritis(aktifEfektif / 60, speed, p.stitchCount)
       const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
-      if (!byDate[c.tanggal]) byDate[c.tanggal] = { tanggal: c.tanggal, efisiensiList: [], aktual: 0 }
+      const utilisasi = totalMin > 0 ? hitungUtilisasi(aktifMin, totalMin) : null
+
+      if (!byDate[c.tanggal]) byDate[c.tanggal] = { tanggal: c.tanggal, efisiensiList: [], utilisasiList: [] }
       byDate[c.tanggal].efisiensiList.push(efisiensi)
-      byDate[c.tanggal].aktual += c.aktual
+      if (utilisasi !== null) byDate[c.tanggal].utilisasiList.push(utilisasi)
     }
-    return Object.values(byDate)
-      .sort((a, b) => a.tanggal.localeCompare(b.tanggal))
-      .map((d) => ({
-        ...d,
-        efisiensi: d.efisiensiList.reduce((a, b) => a + b, 0) / d.efisiensiList.length,
-        tgl: d.tanggal.slice(5), // MM-DD
-      }))
-  }, [filterOp, catatanFiltered, settings])
+    return Object.values(byDate).sort((a, b) => a.tanggal.localeCompare(b.tanggal)).map((d) => ({
+      tgl: d.tanggal.slice(5),
+      efisiensi: d.efisiensiList.reduce((a, b) => a + b, 0) / d.efisiensiList.length,
+      utilisasi: d.utilisasiList.length
+        ? d.utilisasiList.reduce((a, b) => a + b, 0) / d.utilisasiList.length
+        : null,
+    }))
+  }, [filterOp, catatanFiltered])
 
   if (catatanProduksi.length === 0) {
     return (
@@ -125,132 +389,57 @@ export default function LaporanOperator() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header + kontrol */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl font-bold text-gray-800">Laporan Operator</h1>
-        <div className="flex items-center gap-2">
-          {/* Filter rentang */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
-            {RENTANG.map((r, i) => (
-              <button
-                key={r.hari}
-                onClick={() => setRentangIdx(i)}
-                className={`px-3 py-1.5 ${rentangIdx === i ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-          {/* Filter operator */}
-          <select
-            className="input text-sm w-auto"
-            value={filterOp}
-            onChange={(e) => setFilterOp(e.target.value)}
-          >
-            <option value="">Semua Operator</option>
-            {operator.map((o) => <option key={o.id} value={o.id}>{o.nama}</option>)}
-          </select>
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+          {RENTANG.map((r, i) => (
+            <button key={r.hari} onClick={() => setRentangIdx(i)}
+              className={`px-3 py-1.5 ${rentangIdx === i ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+              {r.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Tren grafik (hanya jika filter operator) */}
+      {/* Grafik tren jika ada filter */}
       {filterOp && trenData.length > 1 && (
-        <div className="card">
-          <h2 className="font-semibold text-gray-700 mb-3 text-sm">
-            Tren Efisiensi — {operator.find((o) => o.id === filterOp)?.nama}
-          </h2>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={trenData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="tgl" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} domain={[0, 110]} />
-              <Tooltip
-                formatter={(val) => [`${formatAngka(val)}%`, 'Efisiensi']}
-                contentStyle={{ fontSize: 12 }}
-              />
-              <ReferenceLine y={80} stroke="#16a34a" strokeDasharray="4 2" label={{ value: '80%', position: 'right', fontSize: 10, fill: '#16a34a' }} />
-              <ReferenceLine y={60} stroke="#d97706" strokeDasharray="4 2" label={{ value: '60%', position: 'right', fontSize: 10, fill: '#d97706' }} />
-              <Bar dataKey="efisiensi" radius={[4, 4, 0, 0]}>
-                {trenData.map((entry) => (
-                  <Cell
-                    key={entry.tanggal}
-                    fill={entry.efisiensi >= 80 ? '#22c55e' : entry.efisiensi >= 60 ? '#f59e0b' : '#ef4444'}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <GrafikTren
+          data={trenData}
+          rpmMaks={semuaData.find((d) => d.operatorId === filterOp)?.rpmMaksRata}
+        />
       )}
 
-      {/* Tabel operator */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-700 text-sm">Ringkasan Performa ({RENTANG[rentangIdx].label})</h2>
-          <div className="flex gap-2 text-xs text-gray-400">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-400" />≥80%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-400" />60–79%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" />&lt;60%</span>
-          </div>
-        </div>
-
-        {dataTersaring.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">Tidak ada data dalam rentang ini.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
-                  <th className="pb-2 font-medium">Operator</th>
-                  <th className="pb-2 font-medium text-right">Total Produksi</th>
-                  <th className="pb-2 font-medium text-right">Reject</th>
-                  <th className="pb-2 font-medium text-right">Reject%</th>
-                  <th className="pb-2 font-medium text-right">Efisiensi</th>
-                  <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium">Normalitas</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {dataTersaring.map((r) => (
-                  <tr key={r.operatorId} className="hover:bg-gray-50">
-                    <td className="py-3 font-medium text-gray-800">{r.nama}</td>
-                    <td className="py-3 text-right text-gray-600">{r.totalAktual.toLocaleString('id-ID')}</td>
-                    <td className="py-3 text-right text-red-500">{r.totalReject}</td>
-                    <td className="py-3 text-right text-gray-500">{formatAngka(r.rejectRate)}%</td>
-                    <td className="py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${r.efisiensiRata >= 80 ? 'bg-green-400' : r.efisiensiRata >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                            style={{ width: `${Math.min(r.efisiensiRata, 100)}%` }}
-                          />
-                        </div>
-                        <span className="font-medium">{formatAngka(r.efisiensiRata)}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3"><BadgeStatus status={r.status} /></td>
-                    <td className="py-3">
-                      <BadgeNormal normal={r.normalitas?.normal ?? null} />
-                      {r.normalitas && !r.normalitas.normal && (
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          z={formatAngka(r.normalitas.zscore, 2)} (rata: {formatAngka(r.normalitas.rata)}%)
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Tab */}
+      <div className="flex border-b border-gray-200 gap-1">
+        {[
+          { key: 'ringkasan', label: 'Ringkasan' },
+          { key: 'evaluasi',  label: 'Evaluasi Kinerja' },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setActiveTab(key)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px
+              ${activeTab === key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Legenda normalitas */}
+      {activeTab === 'ringkasan' && (
+        <TabRingkasan data={dataTersaring} filterOp={filterOp} setFilterOp={setFilterOp} operator={operator} />
+      )}
+      {activeTab === 'evaluasi' && (
+        <TabEvaluasi data={dataTersaring.length ? dataTersaring : semuaData} />
+      )}
+
+      {/* Legenda */}
       <div className="card bg-blue-50 border-blue-100 flex items-start gap-2 text-sm text-blue-700">
         <Info size={16} className="shrink-0 mt-0.5" />
         <div>
-          <strong>Analisis Normalitas:</strong> Operator dianggap "normal" jika efisiensinya tidak lebih dari 1,5 standar deviasi
-          di bawah rata-rata semua operator. Jika ditandai "Di bawah rata-rata", perlu perhatian khusus — cek kondisi mesin,
-          keterampilan operator, atau kompleksitas produk yang dikerjakan.
+          <strong>Cara baca evaluasi:</strong>{' '}
+          Utilisasi = % waktu mesin benar-benar berjalan dari total jam kerja.
+          RPM Efektif = kecepatan rata-rata nyata selama produksi (total stitch ÷ menit aktif).
+          Verdict ditentukan dari kombinasi utilisasi, efisiensi output, RPM efektif vs maks, dan reject rate.
         </div>
       </div>
     </div>

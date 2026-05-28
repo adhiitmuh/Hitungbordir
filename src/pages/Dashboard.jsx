@@ -4,7 +4,9 @@ import { Package, Users, Cpu, TrendingUp, AlertTriangle, CheckCircle2, Clipboard
 import useAppStore from '../store/appStore'
 import StatCard from '../components/StatCard'
 import {
-  hitungKapasitasTeoritis, hitungEfisiensi, statusPerforma, formatAngka, formatRupiah
+  hitungKapasitasTeoritis, hitungEfisiensi, statusPerforma,
+  hitungWaktuAktif, hitungSelisihMenit, hitungUtilisasi,
+  resolveJamKerja, formatAngka
 } from '../utils/calculations'
 
 function badgeStatus(status) {
@@ -27,14 +29,18 @@ export default function Dashboard() {
       const p = getProdukById(c.produkId)
       const o = getOperatorById(c.operatorId)
       const speed = c.kecepatan || m?.rpm || 0
+      const totalMin = hitungSelisihMenit(c.jamMulai, c.jamSelesai)
+      const aktifMin = hitungWaktuAktif(c.jamMulai, c.jamSelesai, c.menitBerhenti)
+      const jamEfektif = aktifMin > 0 ? aktifMin / 60 : resolveJamKerja(c)
+      const utilisasi = totalMin > 0 ? hitungUtilisasi(aktifMin, totalMin) : null
       const kapasitas = p && m
-        ? hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, speed, p.stitchCount)
+        ? hitungKapasitasTeoritis(jamEfektif, speed, p.stitchCount)
         : 0
       const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
       totalAktual += c.aktual
       totalTarget += kapasitas
       totalReject += c.reject ?? 0
-      return { ...c, mesin: m, produk: p, operator: o, kapasitas, efisiensi, status: statusPerforma(efisiensi) }
+      return { ...c, mesin: m, produk: p, operator: o, kapasitas, efisiensi, utilisasi, status: statusPerforma(efisiensi) }
     })
 
     return { rows, totalAktual, totalTarget, totalReject, efisiensiRata: totalTarget ? (totalAktual / totalTarget) * 100 : 0 }
@@ -120,6 +126,7 @@ export default function Dashboard() {
                   <th className="pb-2 font-medium text-right">Target</th>
                   <th className="pb-2 font-medium text-right">Aktual</th>
                   <th className="pb-2 font-medium text-right">Reject</th>
+                  <th className="pb-2 font-medium text-right">Utilisasi</th>
                   <th className="pb-2 font-medium text-right">Efisiensi</th>
                   <th className="pb-2 font-medium">Status</th>
                 </tr>
@@ -149,6 +156,11 @@ export default function Dashboard() {
                     <td className="py-2.5 text-right text-gray-500">{row.kapasitas}</td>
                     <td className="py-2.5 text-right font-medium text-gray-800">{row.aktual}</td>
                     <td className="py-2.5 text-right text-red-500">{row.reject ?? 0}</td>
+                    <td className="py-2.5 text-right">
+                      {row.utilisasi !== null
+                        ? <span className={row.utilisasi >= 75 ? 'text-green-600 font-medium' : row.utilisasi >= 60 ? 'text-amber-500' : 'text-red-500 font-medium'}>{formatAngka(row.utilisasi)}%</span>
+                        : <span className="text-gray-300">—</span>}
+                    </td>
                     <td className="py-2.5 text-right font-medium">{formatAngka(row.efisiensi)}%</td>
                     <td className="py-2.5">{badgeStatus(row.status)}</td>
                   </tr>

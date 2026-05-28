@@ -1,46 +1,71 @@
 import { useState } from 'react'
-import { Plus, Trash2, ClipboardCheck, Info } from 'lucide-react'
+import { Plus, Trash2, ClipboardCheck, Info, Clock } from 'lucide-react'
 import useAppStore from '../store/appStore'
-import { hitungKapasitasTeoritis, hitungEfisiensi, formatAngka } from '../utils/calculations'
+import useAuthStore from '../store/authStore'
+import {
+  hitungKapasitasTeoritis, hitungEfisiensi, hitungSelisihMenit,
+  hitungWaktuAktif, hitungUtilisasi, hitungRpmEfektif, formatAngka
+} from '../utils/calculations'
 
 function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
-const EMPTY_FORM = {
-  operatorId: '',
-  mesinId: '',
-  produkId: '',
-  kecepatan: '',
-  aktual: '',
-  reject: '',
-  jamKerja: '',
-  catatan: '',
+function nowTime() {
+  const now = new Date()
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
+function emptyForm(operatorId = '') {
+  return {
+    operatorId,
+    mesinId: '',
+    produkId: '',
+    kecepatan: '',
+    jamMulai: '',
+    jamSelesai: '',
+    menitBerhenti: '',
+    alasanBerhenti: '',
+    aktual: '',
+    reject: '',
+    catatan: '',
+  }
 }
 
 export default function InputProduksi() {
-  const { operator, mesin, produk, settings, catatanProduksi, tambahCatatan, hapusCatatan, getMesinById, getProdukById, getOperatorById } = useAppStore()
+  const {
+    operator, mesin, produk, settings, catatanProduksi,
+    tambahCatatan, hapusCatatan, getMesinById, getProdukById, getOperatorById
+  } = useAppStore()
+  const { role, operatorId: sessionOpId } = useAuthStore()
 
   const [tanggal, setTanggal] = useState(today())
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState(emptyForm(sessionOpId ?? ''))
   const [saved, setSaved] = useState(false)
 
   const catatanHari = catatanProduksi
     .filter((c) => c.tanggal === tanggal)
     .sort((a, b) => b.id.localeCompare(a.id))
 
-  // Hitung preview kapasitas
+  // Preview kalkulasi
   const mesinTerpilih = getMesinById(form.mesinId)
   const produkTerpilih = getProdukById(form.produkId)
-  const jamKerja = +form.jamKerja || settings.jamKerjaPerShift
-  // Gunakan kecepatan yang diinput; jika kosong fallback ke RPM mesin
   const kecepatanEfektif = +form.kecepatan || mesinTerpilih?.rpm || 0
-  const kapasitasPreview = mesinTerpilih && produkTerpilih
-    ? hitungKapasitasTeoritis(jamKerja, kecepatanEfektif, produkTerpilih.stitchCount)
+
+  const totalMenit = hitungSelisihMenit(form.jamMulai, form.jamSelesai)
+  const waktuAktif = hitungWaktuAktif(form.jamMulai, form.jamSelesai, +form.menitBerhenti)
+  const jamAktif = waktuAktif / 60
+
+  const kapasitasPreview = mesinTerpilih && produkTerpilih && waktuAktif > 0
+    ? hitungKapasitasTeoritis(jamAktif, kecepatanEfektif, produkTerpilih.stitchCount)
     : null
 
+  const utilisasiPreview = totalMenit > 0 ? hitungUtilisasi(waktuAktif, totalMenit) : null
   const efisiensiPreview = kapasitasPreview && form.aktual
     ? hitungEfisiensi(+form.aktual, kapasitasPreview)
+    : null
+  const rpmEfektifPreview = form.aktual && produkTerpilih && waktuAktif > 0
+    ? hitungRpmEfektif(+form.aktual, produkTerpilih.stitchCount, waktuAktif)
     : null
 
   function handleSubmit(e) {
@@ -52,96 +77,95 @@ export default function InputProduksi() {
       mesinId: form.mesinId,
       produkId: form.produkId,
       kecepatan: +form.kecepatan || mesinTerpilih?.rpm || 0,
+      jamMulai: form.jamMulai,
+      jamSelesai: form.jamSelesai,
+      menitBerhenti: +form.menitBerhenti || 0,
+      alasanBerhenti: form.alasanBerhenti,
       aktual: +form.aktual,
       reject: +form.reject || 0,
-      jamKerja: +form.jamKerja || settings.jamKerjaPerShift,
       catatan: form.catatan,
     })
-    setForm(EMPTY_FORM)
+    setForm(emptyForm(sessionOpId ?? ''))
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const isStaff = role === 'staff'
   const formValid = form.operatorId && form.mesinId && form.produkId && form.aktual
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-xl font-bold text-gray-800">Input Produksi</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-800">Input Produksi</h1>
+        {!isStaff && (
+          <input type="date" className="input text-sm w-auto"
+            value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
+        )}
+      </div>
 
       {/* Form */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-700">Catat Produksi</h2>
-          <div>
-            <input
-              type="date"
-              className="input text-sm w-auto"
-              value={tanggal}
-              onChange={(e) => setTanggal(e.target.value)}
-            />
-          </div>
-        </div>
+        <h2 className="font-semibold text-gray-700 mb-4">
+          {isStaff ? 'Laporan Kerja Kamu' : 'Catat Produksi'}
+          {isStaff && (
+            <span className="ml-2 text-xs text-gray-400 font-normal">
+              {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+          )}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Operator */}
-            <div>
-              <label className="label">Operator *</label>
-              <select
-                className="input"
-                value={form.operatorId}
-                onChange={(e) => {
-                  const op = operator.find((o) => o.id === e.target.value)
-                  setForm({ ...form, operatorId: e.target.value, mesinId: op?.mesinId ?? form.mesinId })
-                }}
-              >
-                <option value="">— pilih operator —</option>
-                {operator.map((o) => (
-                  <option key={o.id} value={o.id}>{o.nama}</option>
-                ))}
-              </select>
-            </div>
+
+            {/* Operator — hidden jika staff (auto dari session) */}
+            {isStaff ? (
+              <div className="sm:col-span-2 bg-blue-50 rounded-lg px-3 py-2.5 text-sm text-blue-700 font-medium">
+                Operator: {getOperatorById(sessionOpId)?.nama ?? '—'}
+              </div>
+            ) : (
+              <div>
+                <label className="label">Operator *</label>
+                <select className="input" value={form.operatorId}
+                  onChange={(e) => {
+                    const op = operator.find((o) => o.id === e.target.value)
+                    setForm({ ...form, operatorId: e.target.value, mesinId: op?.mesinId ?? form.mesinId })
+                  }}>
+                  <option value="">— pilih operator —</option>
+                  {operator.map((o) => <option key={o.id} value={o.id}>{o.nama}</option>)}
+                </select>
+              </div>
+            )}
 
             {/* Mesin */}
             <div>
               <label className="label">Mesin *</label>
-              <select
-                className="input"
-                value={form.mesinId}
+              <select className="input" value={form.mesinId}
                 onChange={(e) => {
                   const m = mesin.find((x) => x.id === e.target.value)
-                  // Auto-isi kecepatan dari RPM mesin yang dipilih
                   setForm({ ...form, mesinId: e.target.value, kecepatan: m ? String(m.rpm) : '' })
-                }}
-              >
+                }}>
                 <option value="">— pilih mesin —</option>
-                {mesin.map((m) => (
-                  <option key={m.id} value={m.id}>{m.nama} (maks {m.rpm} RPM)</option>
-                ))}
+                {mesin.map((m) => <option key={m.id} value={m.id}>{m.nama} (maks {m.rpm} RPM)</option>)}
               </select>
             </div>
 
-            {/* Kecepatan aktual */}
+            {/* Speed aktual */}
             <div>
               <label className="label">Speed Aktual (RPM)</label>
-              <input
-                className="input"
-                type="number"
-                placeholder={mesinTerpilih ? `maks mesin: ${mesinTerpilih.rpm}` : 'pilih mesin dulu'}
+              <input className="input" type="number"
+                placeholder={mesinTerpilih ? `maks: ${mesinTerpilih.rpm}` : '—'}
                 value={form.kecepatan}
-                onChange={(e) => setForm({ ...form, kecepatan: e.target.value })}
-              />
-              <p className="text-xs text-gray-400 mt-0.5">
-                {mesinTerpilih && form.kecepatan && +form.kecepatan !== mesinTerpilih.rpm
-                  ? `↓ diturunkan dari ${mesinTerpilih.rpm} RPM`
-                  : 'otomatis diisi dari mesin, bisa diubah'}
-              </p>
+                onChange={(e) => setForm({ ...form, kecepatan: e.target.value })} />
+              {mesinTerpilih && form.kecepatan && +form.kecepatan !== mesinTerpilih.rpm && (
+                <p className="text-xs text-amber-500 mt-0.5">↓ diturunkan dari {mesinTerpilih.rpm} RPM</p>
+              )}
             </div>
 
             {/* Produk */}
             <div className="sm:col-span-2">
               <label className="label">Jenis Produk *</label>
-              <select className="input" value={form.produkId} onChange={(e) => setForm({ ...form, produkId: e.target.value })}>
+              <select className="input" value={form.produkId}
+                onChange={(e) => setForm({ ...form, produkId: e.target.value })}>
                 <option value="">— pilih produk —</option>
                 {produk.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -151,130 +175,182 @@ export default function InputProduksi() {
               </select>
             </div>
 
-            {/* Jam Kerja */}
-            <div>
-              <label className="label">Jam Kerja</label>
-              <input
-                className="input"
-                type="number"
-                step="0.5"
-                placeholder={`default: ${settings.jamKerjaPerShift} jam`}
-                value={form.jamKerja}
-                onChange={(e) => setForm({ ...form, jamKerja: e.target.value })}
-              />
+            {/* ── Waktu kerja ── */}
+            <div className="sm:col-span-2">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock size={14} className="text-blue-500" />
+                <span className="text-sm font-medium text-gray-700">Waktu Kerja</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Jam Mulai</label>
+                  <input className="input" type="time" value={form.jamMulai}
+                    onChange={(e) => setForm({ ...form, jamMulai: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Jam Selesai</label>
+                  <input className="input" type="time" value={form.jamSelesai}
+                    onChange={(e) => setForm({ ...form, jamSelesai: e.target.value })} />
+                </div>
+              </div>
             </div>
 
-            {/* Preview kapasitas */}
-            {kapasitasPreview !== null && produkTerpilih && (
-              <div className="sm:col-span-2 flex items-start gap-2 bg-blue-50 text-blue-700 rounded-lg px-3 py-2.5 text-sm">
-                <Info size={15} className="shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <div>
-                    <strong>Kapasitas teoritis: {kapasitasPreview} item</strong>
-                    {efisiensiPreview !== null && (
-                      <span className="ml-2 text-blue-500">→ efisiensi: {formatAngka(efisiensiPreview)}%</span>
-                    )}
+            {/* Downtime */}
+            <div>
+              <label className="label">Total Berhenti (menit)</label>
+              <input className="input" type="number" placeholder="0" value={form.menitBerhenti}
+                onChange={(e) => setForm({ ...form, menitBerhenti: e.target.value })} />
+              <p className="text-xs text-gray-400 mt-0.5">Ganti benang, macet, istirahat, dll.</p>
+            </div>
+            <div>
+              <label className="label">Alasan Berhenti</label>
+              <input className="input" placeholder="cth: benang putus 2x, ganti jarum"
+                value={form.alasanBerhenti}
+                onChange={(e) => setForm({ ...form, alasanBerhenti: e.target.value })} />
+            </div>
+
+            {/* Preview kalkulasi waktu */}
+            {form.jamMulai && form.jamSelesai && (
+              <div className="sm:col-span-2 bg-blue-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                <div>
+                  <div className="text-xs text-blue-400">Durasi Total</div>
+                  <div className="font-semibold text-blue-700">{totalMenit} menit</div>
+                </div>
+                <div>
+                  <div className="text-xs text-blue-400">Waktu Aktif</div>
+                  <div className="font-semibold text-blue-700">{waktuAktif} menit</div>
+                </div>
+                <div>
+                  <div className="text-xs text-blue-400">Utilisasi</div>
+                  <div className={`font-semibold ${utilisasiPreview >= 75 ? 'text-green-600' : utilisasiPreview >= 60 ? 'text-amber-500' : 'text-red-500'}`}>
+                    {utilisasiPreview !== null ? `${formatAngka(utilisasiPreview)}%` : '—'}
                   </div>
-                  <div className="text-blue-500 text-xs">
-                    {kecepatanEfektif} RPM · {produkTerpilih.stitchCount.toLocaleString('id-ID')} stitch
-                    · {formatAngka(produkTerpilih.stitchCount / kecepatanEfektif, 2)} menit/item
+                </div>
+                <div>
+                  <div className="text-xs text-blue-400">Kapasitas Teoritis</div>
+                  <div className="font-semibold text-blue-700">
+                    {kapasitasPreview !== null ? `${kapasitasPreview} item` : '—'}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Aktual */}
+            {/* Hasil aktual */}
             <div>
               <label className="label">Hasil Aktual (item) *</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="0"
-                value={form.aktual}
-                onChange={(e) => setForm({ ...form, aktual: e.target.value })}
-              />
+              <input className="input" type="number" placeholder="0" value={form.aktual}
+                onChange={(e) => setForm({ ...form, aktual: e.target.value })} />
             </div>
-
-            {/* Reject */}
             <div>
               <label className="label">Jumlah Reject/Cacat</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="0"
-                value={form.reject}
-                onChange={(e) => setForm({ ...form, reject: e.target.value })}
-              />
+              <input className="input" type="number" placeholder="0" value={form.reject}
+                onChange={(e) => setForm({ ...form, reject: e.target.value })} />
             </div>
+
+            {/* Preview efisiensi + RPM efektif */}
+            {form.aktual && kapasitasPreview !== null && (
+              <div className="sm:col-span-2 flex gap-3 text-sm flex-wrap">
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <span className="text-gray-400">Efisiensi: </span>
+                  <strong className={efisiensiPreview >= 80 ? 'text-green-600' : efisiensiPreview >= 60 ? 'text-amber-500' : 'text-red-500'}>
+                    {formatAngka(efisiensiPreview)}%
+                  </strong>
+                </div>
+                {rpmEfektifPreview !== null && (
+                  <div className="bg-gray-50 rounded-lg px-3 py-2">
+                    <span className="text-gray-400">RPM efektif: </span>
+                    <strong className="text-gray-700">{Math.round(rpmEfektifPreview)}</strong>
+                    {mesinTerpilih && (
+                      <span className="text-gray-400 text-xs ml-1">/ maks {mesinTerpilih.rpm}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Catatan */}
             <div className="sm:col-span-2">
-              <label className="label">Catatan (opsional)</label>
-              <input
-                className="input"
-                placeholder="cth: mesin sempat berhenti 30 menit"
+              <label className="label">Catatan Tambahan</label>
+              <input className="input" placeholder="opsional — cth: mesin sempat overheat"
                 value={form.catatan}
-                onChange={(e) => setForm({ ...form, catatan: e.target.value })}
-              />
+                onChange={(e) => setForm({ ...form, catatan: e.target.value })} />
             </div>
           </div>
 
           <button type="submit" className="btn-primary flex items-center gap-2" disabled={!formValid}>
             <Plus size={16} />
-            {saved ? '✓ Tersimpan!' : 'Simpan Catatan'}
+            {saved ? '✓ Laporan Tersimpan!' : 'Simpan Laporan'}
           </button>
 
           {(operator.length === 0 || mesin.length === 0 || produk.length === 0) && (
             <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-              Pastikan sudah mengisi data di <strong>Master Data</strong> (Mesin, Operator, dan Produk) sebelum input produksi.
+              Pastikan Admin sudah mengisi <strong>Master Data</strong> (Mesin, Operator, Produk) sebelum input.
             </p>
           )}
         </form>
       </div>
 
-      {/* Tabel catatan hari ini */}
+      {/* Riwayat hari ini */}
       <div className="card">
         <h2 className="font-semibold text-gray-700 mb-3">
-          Catatan Tanggal {new Date(tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          {isStaff ? 'Laporan Kamu Hari Ini' : `Catatan ${new Date(tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}`}
         </h2>
 
-        {catatanHari.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">Belum ada catatan untuk tanggal ini.</p>
+        {catatanHari.filter((c) => isStaff ? c.operatorId === sessionOpId : true).length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">Belum ada catatan{isStaff ? ' dari kamu' : ''} untuk hari ini.</p>
         ) : (
           <div className="space-y-2">
-            {catatanHari.map((c) => {
-              const op = getOperatorById(c.operatorId)
-              const m = getMesinById(c.mesinId)
-              const p = getProdukById(c.produkId)
-              const speed = c.kecepatan || m?.rpm || 0
-              const kapasitas = m && p ? hitungKapasitasTeoritis(c.jamKerja, speed, p.stitchCount) : 0
-              const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
-              const speedTurun = m && c.kecepatan && c.kecepatan < m.rpm
-              return (
-                <div key={c.id} className="border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50 flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-medium text-sm text-gray-800 flex items-center gap-1.5 flex-wrap">
-                      <ClipboardCheck size={14} className="text-green-500 shrink-0" />
-                      {op?.nama ?? '?'} · {m?.nama ?? '?'}
+            {catatanHari
+              .filter((c) => isStaff ? c.operatorId === sessionOpId : true)
+              .map((c) => {
+                const op = getOperatorById(c.operatorId)
+                const m = getMesinById(c.mesinId)
+                const p = getProdukById(c.produkId)
+                const speed = c.kecepatan || m?.rpm || 0
+                const totalMin = hitungSelisihMenit(c.jamMulai, c.jamSelesai)
+                const aktifMin = hitungWaktuAktif(c.jamMulai, c.jamSelesai, c.menitBerhenti)
+                const utilisasi = totalMin > 0 ? hitungUtilisasi(aktifMin, totalMin) : null
+                const kapasitas = m && p && aktifMin > 0
+                  ? hitungKapasitasTeoritis(aktifMin / 60, speed, p.stitchCount)
+                  : 0
+                const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
+
+                return (
+                  <div key={c.id} className="border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50 flex items-start justify-between gap-2">
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="font-medium text-sm text-gray-800 flex items-center gap-1.5 flex-wrap">
+                        <ClipboardCheck size={14} className="text-green-500 shrink-0" />
+                        {!isStaff && <span>{op?.nama ?? '?'} · </span>}
+                        {m?.nama ?? '?'} · {p?.nama ?? '?'}
+                        <span className="text-xs text-gray-400">({p?.tipeBordir})</span>
+                      </div>
+                      <div className="text-xs text-gray-500 flex flex-wrap gap-x-3">
+                        {c.jamMulai && c.jamSelesai && (
+                          <span>{c.jamMulai}–{c.jamSelesai}
+                            {c.menitBerhenti > 0 && <span className="text-amber-500"> (berhenti {c.menitBerhenti}m)</span>}
+                          </span>
+                        )}
+                        {utilisasi !== null && (
+                          <span>utilisasi <strong className={utilisasi >= 75 ? 'text-green-600' : 'text-amber-500'}>{formatAngka(utilisasi)}%</strong></span>
+                        )}
+                        <span>{c.aktual} item · reject {c.reject}</span>
+                        <span>efisiensi <strong>{formatAngka(efisiensi)}%</strong></span>
+                      </div>
+                      {c.alasanBerhenti && (
+                        <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-0.5 inline-block">
+                          Berhenti: {c.alasanBerhenti}
+                        </div>
+                      )}
+                      {c.catatan && <div className="text-xs text-gray-400 italic">{c.catatan}</div>}
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      {p?.nama ?? '?'} ({p?.tipeBordir})
-                      · <span className="font-medium text-gray-600">{speed} RPM</span>
-                      {speedTurun && <span className="text-amber-500"> ↓diturunkan</span>}
-                      · {p?.stitchCount?.toLocaleString('id-ID')} stitch
-                      · {c.aktual} item · {c.reject} reject · efisiensi {formatAngka(efisiensi)}%
-                    </div>
-                    {c.catatan && <div className="text-xs text-gray-400 mt-0.5 italic">{c.catatan}</div>}
+                    {!isStaff && (
+                      <button className="text-gray-300 hover:text-red-400 shrink-0" onClick={() => hapusCatatan(c.id)}>
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
-                  <button
-                    className="text-gray-300 hover:text-red-400 shrink-0"
-                    onClick={() => hapusCatatan(c.id)}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              )
-            })}
+                )
+              })}
           </div>
         )}
       </div>
