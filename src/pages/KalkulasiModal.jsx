@@ -7,29 +7,31 @@ import {
   formatRupiah, formatAngka
 } from '../utils/calculations'
 
-function KalkulatorConeInline({ onApply }) {
-  const [cone, setCone] = useState({ harga: '', meter: '', meterPer1000: '12' })
-  const hasil = (cone.harga && cone.meter)
-    ? hitungHargaBenangDariCone(+cone.harga, +cone.meter, +cone.meterPer1000 || 12)
+function KalkulatorGulunganInline({ onApply }) {
+  const [g, setG] = useState({ harga: '', meter: '', meterPer1000: '12' })
+  const hasil = (g.harga && g.meter)
+    ? hitungHargaBenangDariCone(+g.harga, +g.meter, +g.meterPer1000 || 12)
     : null
   return (
     <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
-      <div className="text-xs font-medium text-blue-700">Hitung harga benang dari cone</div>
+      <div className="text-xs font-medium text-blue-700">Hitung harga benang dari gulungan</div>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="label text-xs text-blue-700">Harga/cone (Rp)</label>
+          <label className="label text-xs text-blue-700">Harga/gulungan (Rp)</label>
           <input className="input text-sm" type="number" placeholder="cth: 15000"
-            value={cone.harga} onChange={(e) => setCone({ ...cone, harga: e.target.value })} />
+            value={g.harga} onChange={(e) => setG({ ...g, harga: e.target.value })} />
         </div>
         <div>
-          <label className="label text-xs text-blue-700">Panjang cone (m)</label>
+          <label className="label text-xs text-blue-700">Panjang gulungan (m)</label>
           <input className="input text-sm" type="number" placeholder="cth: 1000"
-            value={cone.meter} onChange={(e) => setCone({ ...cone, meter: e.target.value })} />
+            value={g.meter} onChange={(e) => setG({ ...g, meter: e.target.value })} />
+          <p className="text-xs text-gray-400 mt-0.5">Tertera di label gulungan</p>
         </div>
         <div>
           <label className="label text-xs text-blue-700">Meter/1.000 stitch</label>
           <input className="input text-sm" type="number" step="0.5" placeholder="12"
-            value={cone.meterPer1000} onChange={(e) => setCone({ ...cone, meterPer1000: e.target.value })} />
+            value={g.meterPer1000} onChange={(e) => setG({ ...g, meterPer1000: e.target.value })} />
+          <p className="text-xs text-gray-400 mt-0.5">Rata-rata: 10–14 m</p>
         </div>
       </div>
       {hasil && (
@@ -73,7 +75,7 @@ export default function KalkulasiModal() {
   const [tarifCustom, setTarifCustom] = useState('')
   const [benangCustom, setBenangCustom] = useState('')
   const [overheadCustom, setOverheadCustom] = useState('')
-  const [showKalkCone, setShowKalkCone] = useState(false)
+  const [showKalkGulungan, setShowKalkGulungan] = useState(false)
 
   const p = produk.find((x) => x.id === produkId)
   const m = mesin.find((x) => x.id === mesinId)
@@ -170,18 +172,18 @@ export default function KalkulasiModal() {
                 value={benangCustom} onChange={(e) => setBenangCustom(e.target.value)} />
               <button
                 className="btn-secondary text-xs shrink-0 whitespace-nowrap"
-                onClick={() => setShowKalkCone(!showKalkCone)}
+                onClick={() => setShowKalkGulungan(!showKalkGulungan)}
               >
-                {showKalkCone ? 'Tutup' : 'Hitung dari cone'}
+                {showKalkGulungan ? 'Tutup' : 'Hitung dari gulungan'}
               </button>
             </div>
           </div>
 
-          {showKalkCone && (
-            <KalkulatorConeInline
+          {showKalkGulungan && (
+            <KalkulatorGulunganInline
               onApply={(nilai) => {
                 setBenangCustom(String(Math.round(nilai * 10) / 10))
-                setShowKalkCone(false)
+                setShowKalkGulungan(false)
               }}
             />
           )}

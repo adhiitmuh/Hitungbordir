@@ -101,23 +101,25 @@ export function analisisNormalitas(efisiensiOperator, semuaEfisiensi) {
 }
 
 /**
- * Hitung harga benang per 1.000 stitch dari harga cone.
+ * Hitung harga benang per 1.000 stitch dari harga gulungan (kelos) benang.
  *
  * Pemakaian benang di lapangan (atas + bawah) ≈ 10–14 meter per 1.000 stitch.
  * Default 12m adalah nilai umum untuk bordir rata-rata.
  *
- * @param {number} hargaPerCone      - harga beli satu cone benang (Rp)
- * @param {number} meterPerCone      - panjang benang dalam satu cone (meter)
+ * @param {number} hargaPerGulungan   - harga beli satu gulungan benang (Rp)
+ * @param {number} meterPerGulungan   - panjang benang dalam satu gulungan (meter)
  * @param {number} meterPer1000Stitch - estimasi pemakaian benang per 1.000 stitch (meter)
- * @returns {{ hargaPer1000Stitch: number, hargaPerMeter: number, coneUntuk1000Stitch: number }}
+ * @returns {{ hargaPer1000Stitch: number, hargaPerMeter: number }}
  */
-export function hitungHargaBenangDariCone(hargaPerCone, meterPerCone, meterPer1000Stitch = 12) {
-  if (!hargaPerCone || !meterPerCone) return null
-  const hargaPerMeter = hargaPerCone / meterPerCone
+export function hitungHargaBenangDariGulungan(hargaPerGulungan, meterPerGulungan, meterPer1000Stitch = 12) {
+  if (!hargaPerGulungan || !meterPerGulungan) return null
+  const hargaPerMeter = hargaPerGulungan / meterPerGulungan
   const hargaPer1000Stitch = hargaPerMeter * meterPer1000Stitch
-  const coneUntuk1000Stitch = meterPer1000Stitch / meterPerCone
-  return { hargaPer1000Stitch, hargaPerMeter, coneUntuk1000Stitch }
+  return { hargaPer1000Stitch, hargaPerMeter }
 }
+
+// Alias lama agar tidak breaking jika ada referensi lain
+export const hitungHargaBenangDariCone = hitungHargaBenangDariGulungan
 
 export function formatRupiah(angka) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka)
