@@ -10,6 +10,7 @@ const defaultSettings = {
   gajiHarianDefault: 100000,
   jamKerjaPerShift: 8,
   overheadHarian: 10000,
+  adminPassword: 'admin123',
 }
 
 function generateId() {

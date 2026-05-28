@@ -417,6 +417,74 @@ function PengaturanGlobal() {
           {saved ? '✓ Tersimpan' : 'Simpan Pengaturan'}
         </button>
       </div>
+
+      {/* Ganti password admin */}
+      <div className="col-span-2 border-t border-gray-100 pt-4">
+        <GantiPasswordAdmin />
+      </div>
+    </div>
+  )
+}
+
+function GantiPasswordAdmin() {
+  const { settings, updateSettings } = useAppStore()
+  const [f, setF] = useState({ lama: '', baru: '', konfirmasi: '' })
+  const [msg, setMsg] = useState(null) // { type: 'ok'|'err', text }
+  const [show, setShow] = useState(false)
+
+  function handleGanti(e) {
+    e.preventDefault()
+    if (f.lama !== (settings.adminPassword ?? 'admin123')) {
+      setMsg({ type: 'err', text: 'Password lama salah.' }); return
+    }
+    if (f.baru.length < 6) {
+      setMsg({ type: 'err', text: 'Password baru minimal 6 karakter.' }); return
+    }
+    if (f.baru !== f.konfirmasi) {
+      setMsg({ type: 'err', text: 'Konfirmasi password tidak cocok.' }); return
+    }
+    updateSettings({ adminPassword: f.baru })
+    setF({ lama: '', baru: '', konfirmasi: '' })
+    setMsg({ type: 'ok', text: 'Password admin berhasil diubah.' })
+    setTimeout(() => setMsg(null), 3000)
+  }
+
+  return (
+    <div>
+      <button
+        className="text-sm text-blue-600 hover:underline font-medium"
+        onClick={() => { setShow(!show); setMsg(null) }}
+      >
+        {show ? 'Tutup' : '🔑 Ganti Password Admin'}
+      </button>
+
+      {show && (
+        <form onSubmit={handleGanti} className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {msg && (
+            <div className={`sm:col-span-3 text-sm rounded-lg px-3 py-2 ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+              {msg.text}
+            </div>
+          )}
+          <div>
+            <label className="label">Password Lama</label>
+            <input className="input" type="password" value={f.lama}
+              onChange={(e) => setF({ ...f, lama: e.target.value })} placeholder="••••••" />
+          </div>
+          <div>
+            <label className="label">Password Baru</label>
+            <input className="input" type="password" value={f.baru}
+              onChange={(e) => setF({ ...f, baru: e.target.value })} placeholder="min. 6 karakter" />
+          </div>
+          <div>
+            <label className="label">Konfirmasi Password Baru</label>
+            <input className="input" type="password" value={f.konfirmasi}
+              onChange={(e) => setF({ ...f, konfirmasi: e.target.value })} placeholder="ulangi password baru" />
+          </div>
+          <div className="sm:col-span-3">
+            <button type="submit" className="btn-primary text-sm">Ganti Password</button>
+          </div>
+        </form>
+      )}
     </div>
   )
 }
