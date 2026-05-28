@@ -4,7 +4,7 @@ import useAppStore from '../store/appStore'
 import {
   hitungKapasitasTeoritis, hitungWaktuPerItem, hitungBiayaBenang,
   hitungBiayaListrik, hitungGajiPerItem, hitungHargaBenangDariCone,
-  formatRupiah, formatAngka
+  hargaBenangPer1000, formatRupiah, formatAngka
 } from '../utils/calculations'
 
 function KalkulatorGulunganInline({ onApply }) {
@@ -65,7 +65,7 @@ function RowBiaya({ label, nilai, persen, highlight }) {
 }
 
 export default function KalkulasiModal() {
-  const { produk, mesin, operator, settings } = useAppStore()
+  const { produk, mesin, operator, benang: benangList, settings } = useAppStore()
 
   const [produkId, setProdukId] = useState('')
   const [mesinId, setMesinId] = useState('')
@@ -73,15 +73,20 @@ export default function KalkulasiModal() {
   const [jamKerja, setJamKerja] = useState(settings.jamKerjaPerShift)
   const [produksiAktual, setProduksiAktual] = useState('')
   const [tarifCustom, setTarifCustom] = useState('')
-  const [benangCustom, setBenangCustom] = useState('')
   const [overheadCustom, setOverheadCustom] = useState('')
+  // Benang — pakai master data jika ada, fallback ke manual
+  const [benangAtasId, setBenangAtasId] = useState('')
+  const [benangBawahId, setBenangBawahId] = useState('')
+  const [benangManual, setBenangManual] = useState('')
   const [showKalkGulungan, setShowKalkGulungan] = useState(false)
 
+  const adaBenangMaster = benangList.length > 0
   const p = produk.find((x) => x.id === produkId)
   const m = mesin.find((x) => x.id === mesinId)
+  const bAtas = benangList.find((b) => b.id === benangAtasId)
+  const bBawah = benangList.find((b) => b.id === benangBawahId)
 
   const tarif = +tarifCustom || settings.tarifListrikKwh
-  const benang = +benangCustom || settings.hargaBenangPer1000Stitch
   const overhead = +overheadCustom || settings.overheadHarian
   const gaji = +gajiHarianCustom || settings.gajiHarianDefault
 
@@ -93,25 +98,33 @@ export default function KalkulasiModal() {
     const kapasitasTeoritis = hitungKapasitasTeoritis(+jamKerja, rpm, stitchCount)
     const totalProduksi = +produksiAktual || kapasitasTeoritis
     const waktuMenit = hitungWaktuPerItem(rpm, stitchCount)
-    const biayaBenang = hitungBiayaBenang(stitchCount, benang)
+
+    let biayaBenangAtas = 0
+    let biayaBenangBawah = 0
+    let biayaBenangManual = 0
+
+    if (adaBenangMaster) {
+      if (bAtas) biayaBenangAtas = hitungBiayaBenang(stitchCount, hargaBenangPer1000(bAtas))
+      if (bBawah) biayaBenangBawah = hitungBiayaBenang(stitchCount, hargaBenangPer1000(bBawah))
+    } else {
+      const hargaManual = +benangManual || settings.hargaBenangPer1000Stitch
+      biayaBenangManual = hitungBiayaBenang(stitchCount, hargaManual)
+    }
+
     const biayaListrik = hitungBiayaListrik(dayaWatt, waktuMenit, tarif)
     const gajiPerItem = hitungGajiPerItem(gaji, totalProduksi)
     const overheadPerItem = overhead / totalProduksi
-    const total = biayaBenang + biayaListrik + gajiPerItem + overheadPerItem
+    const totalBenang = adaBenangMaster ? biayaBenangAtas + biayaBenangBawah : biayaBenangManual
+    const total = totalBenang + biayaListrik + gajiPerItem + overheadPerItem
 
     return {
-      kapasitasTeoritis,
-      totalProduksi,
-      waktuMenit,
-      biayaBenang,
-      biayaListrik,
-      gajiPerItem,
-      overheadPerItem,
-      total,
+      kapasitasTeoritis, totalProduksi, waktuMenit,
+      biayaBenangAtas, biayaBenangBawah, biayaBenangManual, totalBenang,
+      biayaListrik, gajiPerItem, overheadPerItem, total,
       marginJual: p.hargaJual ? p.hargaJual - total : null,
       marginPersen: p.hargaJual ? ((p.hargaJual - total) / p.hargaJual) * 100 : null,
     }
-  }, [p, m, jamKerja, produksiAktual, tarif, benang, gaji, overhead])
+  }, [p, m, jamKerja, produksiAktual, tarif, bAtas, bBawah, benangManual, gaji, overhead, adaBenangMaster])
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -165,24 +178,54 @@ export default function KalkulasiModal() {
               value={gajiHarianCustom} onChange={(e) => setGajiHarianCustom(e.target.value)} />
           </div>
 
-          <div>
-            <label className="label">Harga Benang / 1.000 stitch (Rp)</label>
-            <div className="flex gap-2">
-              <input className="input" type="number" placeholder={`default: ${formatRupiah(settings.hargaBenangPer1000Stitch)}`}
-                value={benangCustom} onChange={(e) => setBenangCustom(e.target.value)} />
-              <button
-                className="btn-secondary text-xs shrink-0 whitespace-nowrap"
-                onClick={() => setShowKalkGulungan(!showKalkGulungan)}
-              >
-                {showKalkGulungan ? 'Tutup' : 'Hitung dari gulungan'}
-              </button>
+          {adaBenangMaster ? (
+            <>
+              <div>
+                <label className="label">Benang Atas</label>
+                <select className="input" value={benangAtasId} onChange={(e) => setBenangAtasId(e.target.value)}>
+                  <option value="">— tidak dipilih / Rp 0 —</option>
+                  {benangList.filter((b) => b.tipe === 'atas').map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nama} ({formatRupiah(hargaBenangPer1000(b))}/1.000 stitch)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Benang Bawah (Bobbin)</label>
+                <select className="input" value={benangBawahId} onChange={(e) => setBenangBawahId(e.target.value)}>
+                  <option value="">— tidak dipilih / Rp 0 —</option>
+                  {benangList.filter((b) => b.tipe === 'bawah').map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nama} ({formatRupiah(hargaBenangPer1000(b))}/1.000 stitch)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="label">Harga Benang / 1.000 stitch (Rp)</label>
+              <div className="flex gap-2">
+                <input className="input" type="number" placeholder={`default: ${formatRupiah(settings.hargaBenangPer1000Stitch)}`}
+                  value={benangManual} onChange={(e) => setBenangManual(e.target.value)} />
+                <button
+                  className="btn-secondary text-xs shrink-0 whitespace-nowrap"
+                  onClick={() => setShowKalkGulungan(!showKalkGulungan)}
+                >
+                  {showKalkGulungan ? 'Tutup' : 'Hitung dari gulungan'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Tambahkan data benang di <strong>Master Data → Benang</strong> untuk perhitungan lebih akurat.
+              </p>
             </div>
-          </div>
+          )}
 
           {showKalkGulungan && (
             <KalkulatorGulunganInline
               onApply={(nilai) => {
-                setBenangCustom(String(Math.round(nilai * 10) / 10))
+                setBenangManual(String(Math.round(nilai * 10) / 10))
                 setShowKalkGulungan(false)
               }}
             />
@@ -213,11 +256,33 @@ export default function KalkulasiModal() {
           </p>
 
           <div className="divide-y divide-gray-50">
-            <RowBiaya
-              label="Biaya Benang"
-              nilai={hasil.biayaBenang}
-              persen={(hasil.biayaBenang / hasil.total) * 100}
-            />
+            {adaBenangMaster ? (
+              <>
+                {hasil.biayaBenangAtas > 0 && (
+                  <RowBiaya
+                    label={`Benang Atas${bAtas ? ` (${bAtas.nama})` : ''}`}
+                    nilai={hasil.biayaBenangAtas}
+                    persen={(hasil.biayaBenangAtas / hasil.total) * 100}
+                  />
+                )}
+                {hasil.biayaBenangBawah > 0 && (
+                  <RowBiaya
+                    label={`Benang Bawah${bBawah ? ` (${bBawah.nama})` : ''}`}
+                    nilai={hasil.biayaBenangBawah}
+                    persen={(hasil.biayaBenangBawah / hasil.total) * 100}
+                  />
+                )}
+                {hasil.totalBenang > 0 && (hasil.biayaBenangAtas > 0 || hasil.biayaBenangBawah > 0) && (
+                  <RowBiaya label="Total Biaya Benang" nilai={hasil.totalBenang} persen={(hasil.totalBenang / hasil.total) * 100} />
+                )}
+              </>
+            ) : (
+              <RowBiaya
+                label="Biaya Benang"
+                nilai={hasil.biayaBenangManual}
+                persen={(hasil.biayaBenangManual / hasil.total) * 100}
+              />
+            )}
             <RowBiaya
               label="Biaya Listrik"
               nilai={hasil.biayaListrik}
@@ -256,21 +321,18 @@ export default function KalkulasiModal() {
             <p className="text-xs text-gray-400 mb-1">Komposisi Modal</p>
             <div className="flex rounded-full overflow-hidden h-4">
               {[
-                { val: hasil.biayaBenang, color: 'bg-blue-400', label: 'Benang' },
-                { val: hasil.biayaListrik, color: 'bg-yellow-400', label: 'Listrik' },
-                { val: hasil.gajiPerItem, color: 'bg-green-400', label: 'Gaji' },
-                { val: hasil.overheadPerItem, color: 'bg-purple-400', label: 'Overhead' },
+                { val: hasil.totalBenang, color: 'bg-blue-400' },
+                { val: hasil.biayaListrik, color: 'bg-yellow-400' },
+                { val: hasil.gajiPerItem, color: 'bg-green-400' },
+                { val: hasil.overheadPerItem, color: 'bg-purple-400' },
               ].map(({ val, color }) => (
-                <div
-                  key={color}
-                  className={`${color} transition-all`}
-                  style={{ width: `${(val / hasil.total) * 100}%` }}
-                />
+                <div key={color} className={`${color} transition-all`}
+                  style={{ width: `${(val / hasil.total) * 100}%` }} />
               ))}
             </div>
             <div className="flex gap-3 mt-1.5 flex-wrap">
               {[
-                { color: 'bg-blue-400', label: 'Benang', val: hasil.biayaBenang },
+                { color: 'bg-blue-400', label: 'Benang', val: hasil.totalBenang },
                 { color: 'bg-yellow-400', label: 'Listrik', val: hasil.biayaListrik },
                 { color: 'bg-green-400', label: 'Gaji', val: hasil.gajiPerItem },
                 { color: 'bg-purple-400', label: 'Overhead', val: hasil.overheadPerItem },

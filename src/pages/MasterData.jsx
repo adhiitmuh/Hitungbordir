@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Cpu, Users, Package, Settings2, Trash2, Pencil, Plus, Save, X, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
+import { Cpu, Users, Package, Settings2, Trash2, Pencil, Plus, Save, X, ChevronDown, ChevronUp, ArrowRight, Layers } from 'lucide-react'
 import useAppStore, { KATEGORI_PRODUK, TIPE_BORDIR } from '../store/appStore'
-import { formatRupiah, formatAngka, hitungHargaBenangDariCone } from '../utils/calculations'
+import { formatRupiah, formatAngka, hitungHargaBenangDariCone, hargaBenangPer1000 } from '../utils/calculations'
 
 function Section({ title, icon: Icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -298,6 +298,145 @@ function TableProduk() {
   )
 }
 
+// ── Benang ───────────────────────────────────────────────────
+function FormBenang({ initial, onSave, onCancel }) {
+  const defaultMeterPer1000 = initial?.tipe === 'bawah' ? '6' : '12'
+  const [f, setF] = useState(initial ?? {
+    nama: '', tipe: 'atas', hargaPerGulungan: '', meterPerGulungan: '', meterPer1000Stitch: defaultMeterPer1000
+  })
+  const ok = f.nama && f.tipe && f.hargaPerGulungan && f.meterPerGulungan
+
+  const preview = (f.hargaPerGulungan && f.meterPerGulungan)
+    ? hargaBenangPer1000({ ...f, hargaPerGulungan: +f.hargaPerGulungan, meterPerGulungan: +f.meterPerGulungan, meterPer1000Stitch: +f.meterPer1000Stitch || 12 })
+    : null
+
+  return (
+    <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-xl p-4 mt-3">
+      <div className="col-span-2">
+        <label className="label">Nama Benang / Merk *</label>
+        <input className="input" value={f.nama}
+          onChange={(e) => setF({ ...f, nama: e.target.value })}
+          placeholder="cth: Madeira Rayon 40 Putih, Coats Epic Merah" />
+      </div>
+      <div>
+        <label className="label">Tipe *</label>
+        <select className="input" value={f.tipe}
+          onChange={(e) => setF({ ...f, tipe: e.target.value, meterPer1000Stitch: e.target.value === 'bawah' ? '6' : '12' })}>
+          <option value="atas">Benang Atas</option>
+          <option value="bawah">Benang Bawah (Bobbin)</option>
+        </select>
+      </div>
+      <div>
+        <label className="label">Harga per Gulungan (Rp) *</label>
+        <input className="input" type="number" value={f.hargaPerGulungan}
+          onChange={(e) => setF({ ...f, hargaPerGulungan: e.target.value })}
+          placeholder="cth: 15000" />
+      </div>
+      <div>
+        <label className="label">Panjang Benang (meter) *</label>
+        <input className="input" type="number" value={f.meterPerGulungan}
+          onChange={(e) => setF({ ...f, meterPerGulungan: e.target.value })}
+          placeholder="cth: 1000" />
+        <p className="text-xs text-gray-400 mt-0.5">Tertera di label gulungan</p>
+      </div>
+      <div>
+        <label className="label">Pemakaian per 1.000 stitch (m)</label>
+        <input className="input" type="number" step="0.5" value={f.meterPer1000Stitch}
+          onChange={(e) => setF({ ...f, meterPer1000Stitch: e.target.value })}
+          placeholder={f.tipe === 'bawah' ? '6' : '12'} />
+        <p className="text-xs text-gray-400 mt-0.5">{f.tipe === 'bawah' ? 'Bobbin: rata-rata 5–8 m' : 'Atas: rata-rata 10–14 m'}</p>
+      </div>
+      {preview !== null && (
+        <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-center gap-3 text-sm">
+          <span className="text-gray-500">Harga per 1.000 stitch:</span>
+          <strong className="text-blue-700">{formatRupiah(preview)}</strong>
+        </div>
+      )}
+      <div className="col-span-2 flex gap-2">
+        <button className="btn-primary flex items-center gap-1 text-sm" disabled={!ok}
+          onClick={() => onSave({
+            ...f,
+            hargaPerGulungan: +f.hargaPerGulungan,
+            meterPerGulungan: +f.meterPerGulungan,
+            meterPer1000Stitch: +f.meterPer1000Stitch || (f.tipe === 'bawah' ? 6 : 12),
+          })}>
+          <Save size={14} />Simpan
+        </button>
+        <button className="btn-secondary text-sm" onClick={onCancel}><X size={14} />Batal</button>
+      </div>
+    </div>
+  )
+}
+
+function TableBenang() {
+  const { benang, tambahBenang, updateBenang, hapusBenang } = useAppStore()
+  const [tambah, setTambah] = useState(false)
+  const [editId, setEditId] = useState(null)
+
+  const atas = benang.filter((b) => b.tipe === 'atas')
+  const bawah = benang.filter((b) => b.tipe === 'bawah')
+
+  function BenangGroup({ items, label }) {
+    if (items.length === 0) return null
+    return (
+      <div>
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 mt-3">{label}</div>
+        <div className="space-y-2">
+          {items.map((b) => (
+            <div key={b.id}>
+              {editId === b.id ? (
+                <FormBenang
+                  initial={b}
+                  onSave={(d) => { updateBenang(b.id, d); setEditId(null) }}
+                  onCancel={() => setEditId(null)}
+                />
+              ) : (
+                <div className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50">
+                  <div>
+                    <div className="font-medium text-gray-700 text-sm">{b.nama}</div>
+                    <div className="text-xs text-gray-400">
+                      {formatRupiah(b.hargaPerGulungan)}/gulungan · {b.meterPerGulungan.toLocaleString('id-ID')} m · {b.meterPer1000Stitch} m/1.000 stitch
+                      <span className="ml-2 text-blue-600 font-medium">→ {formatRupiah(hargaBenangPer1000(b))}/1.000 stitch</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="text-gray-400 hover:text-blue-500" onClick={() => setEditId(b.id)}><Pencil size={15} /></button>
+                    <button className="text-gray-400 hover:text-red-500" onClick={() => hapusBenang(b.id)}><Trash2 size={15} /></button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="flex justify-end mb-3">
+        <button className="btn-primary flex items-center gap-1 text-sm" onClick={() => { setTambah(true); setEditId(null) }}>
+          <Plus size={14} />Tambah Benang
+        </button>
+      </div>
+      {tambah && (
+        <FormBenang
+          onSave={(d) => { tambahBenang(d); setTambah(false) }}
+          onCancel={() => setTambah(false)}
+        />
+      )}
+      {benang.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-6">Belum ada data benang. Tambahkan merk dan tipe benang yang digunakan.</p>
+      ) : (
+        <>
+          <BenangGroup items={atas} label="Benang Atas" />
+          <BenangGroup items={bawah} label="Benang Bawah (Bobbin)" />
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Kalkulator Harga Benang dari Gulungan ────────────────────
 function KalkulatorGulungan({ onApply }) {
   const [g, setG] = useState({ harga: '', meter: '', meterPer1000: '12' })
@@ -504,6 +643,10 @@ export default function MasterData() {
 
       <Section title="Jenis Produk" icon={Package}>
         <TableProduk />
+      </Section>
+
+      <Section title="Benang" icon={Layers}>
+        <TableBenang />
       </Section>
 
       <Section title="Pengaturan Global" icon={Settings2} defaultOpen={false}>

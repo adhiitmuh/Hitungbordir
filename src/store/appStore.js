@@ -24,6 +24,7 @@ const useAppStore = create(
       mesin: [],
       operator: [],
       produk: [],
+      benang: [],
       catatanProduksi: [],
 
       updateSettings: (updates) =>
@@ -53,6 +54,14 @@ const useAppStore = create(
       hapusProduk: (id) =>
         set((s) => ({ produk: s.produk.filter((p) => p.id !== id) })),
 
+      // ── Benang ─────────────────────────────────────────────
+      tambahBenang: (data) =>
+        set((s) => ({ benang: [...s.benang, { id: generateId(), ...data }] })),
+      updateBenang: (id, data) =>
+        set((s) => ({ benang: s.benang.map((b) => (b.id === id ? { ...b, ...data } : b)) })),
+      hapusBenang: (id) =>
+        set((s) => ({ benang: s.benang.filter((b) => b.id !== id) })),
+
       // ── Catatan Produksi ───────────────────────────────────
       tambahCatatan: (data) =>
         set((s) => ({
@@ -72,6 +81,7 @@ const useAppStore = create(
       getMesinById: (id) => get().mesin.find((m) => m.id === id),
       getOperatorById: (id) => get().operator.find((o) => o.id === id),
       getProdukById: (id) => get().produk.find((p) => p.id === id),
+      getBenangById: (id) => get().benang.find((b) => b.id === id),
 
       getCatatanByTanggal: (tanggal) =>
         get().catatanProduksi.filter((c) => c.tanggal === tanggal),

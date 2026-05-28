@@ -121,6 +121,15 @@ export function hitungHargaBenangDariGulungan(hargaPerGulungan, meterPerGulungan
 // Alias lama agar tidak breaking jika ada referensi lain
 export const hitungHargaBenangDariCone = hitungHargaBenangDariGulungan
 
+/**
+ * Hitung harga per 1.000 stitch dari objek benang (master data).
+ * @param {{ hargaPerGulungan, meterPerGulungan, meterPer1000Stitch }} benang
+ */
+export function hargaBenangPer1000(benang) {
+  if (!benang?.hargaPerGulungan || !benang?.meterPerGulungan) return 0
+  return (benang.hargaPerGulungan / benang.meterPerGulungan) * (benang.meterPer1000Stitch || 12)
+}
+
 // ── Fungsi waktu & utilisasi ───────────────────────────────────
 
 /**

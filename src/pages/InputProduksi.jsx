@@ -30,6 +30,8 @@ function emptyForm(operatorId = '') {
     aktual: '',
     reject: '',
     catatan: '',
+    benangAtasId: '',
+    benangBawahId: '',
     fotoSebelum: null,
     fotoSetelah: null,
   }
@@ -37,7 +39,7 @@ function emptyForm(operatorId = '') {
 
 export default function InputProduksi() {
   const {
-    operator, mesin, produk, settings, catatanProduksi,
+    operator, mesin, produk, benang, settings, catatanProduksi,
     tambahCatatan, hapusCatatan, getMesinById, getProdukById, getOperatorById
   } = useAppStore()
   const { role, operatorId: sessionOpId } = useAuthStore()
@@ -87,6 +89,8 @@ export default function InputProduksi() {
       aktual: +form.aktual,
       reject: +form.reject || 0,
       catatan: form.catatan,
+      benangAtasId: form.benangAtasId || null,
+      benangBawahId: form.benangBawahId || null,
       fotoSebelum: form.fotoSebelum,
       fotoSetelah: form.fotoSetelah,
     })
@@ -179,6 +183,32 @@ export default function InputProduksi() {
                 ))}
               </select>
             </div>
+
+            {/* Benang (tampil hanya jika ada data benang) */}
+            {benang.length > 0 && (
+              <>
+                <div>
+                  <label className="label">Benang Atas</label>
+                  <select className="input" value={form.benangAtasId}
+                    onChange={(e) => setForm({ ...form, benangAtasId: e.target.value })}>
+                    <option value="">— pilih benang atas —</option>
+                    {benang.filter((b) => b.tipe === 'atas').map((b) => (
+                      <option key={b.id} value={b.id}>{b.nama}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Benang Bawah (Bobbin)</label>
+                  <select className="input" value={form.benangBawahId}
+                    onChange={(e) => setForm({ ...form, benangBawahId: e.target.value })}>
+                    <option value="">— pilih benang bawah —</option>
+                    {benang.filter((b) => b.tipe === 'bawah').map((b) => (
+                      <option key={b.id} value={b.id}>{b.nama}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
 
             {/* ── Waktu kerja ── */}
             <div className="sm:col-span-2">
