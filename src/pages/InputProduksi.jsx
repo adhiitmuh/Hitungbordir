@@ -11,6 +11,7 @@ const EMPTY_FORM = {
   operatorId: '',
   mesinId: '',
   produkId: '',
+  kecepatan: '',
   aktual: '',
   reject: '',
   jamKerja: '',
@@ -32,8 +33,10 @@ export default function InputProduksi() {
   const mesinTerpilih = getMesinById(form.mesinId)
   const produkTerpilih = getProdukById(form.produkId)
   const jamKerja = +form.jamKerja || settings.jamKerjaPerShift
+  // Gunakan kecepatan yang diinput; jika kosong fallback ke RPM mesin
+  const kecepatanEfektif = +form.kecepatan || mesinTerpilih?.rpm || 0
   const kapasitasPreview = mesinTerpilih && produkTerpilih
-    ? hitungKapasitasTeoritis(jamKerja, mesinTerpilih.rpm, produkTerpilih.stitchCount)
+    ? hitungKapasitasTeoritis(jamKerja, kecepatanEfektif, produkTerpilih.stitchCount)
     : null
 
   const efisiensiPreview = kapasitasPreview && form.aktual
@@ -48,6 +51,7 @@ export default function InputProduksi() {
       operatorId: form.operatorId,
       mesinId: form.mesinId,
       produkId: form.produkId,
+      kecepatan: +form.kecepatan || mesinTerpilih?.rpm || 0,
       aktual: +form.aktual,
       reject: +form.reject || 0,
       jamKerja: +form.jamKerja || settings.jamKerjaPerShift,
@@ -101,12 +105,37 @@ export default function InputProduksi() {
             {/* Mesin */}
             <div>
               <label className="label">Mesin *</label>
-              <select className="input" value={form.mesinId} onChange={(e) => setForm({ ...form, mesinId: e.target.value })}>
+              <select
+                className="input"
+                value={form.mesinId}
+                onChange={(e) => {
+                  const m = mesin.find((x) => x.id === e.target.value)
+                  // Auto-isi kecepatan dari RPM mesin yang dipilih
+                  setForm({ ...form, mesinId: e.target.value, kecepatan: m ? String(m.rpm) : '' })
+                }}
+              >
                 <option value="">— pilih mesin —</option>
                 {mesin.map((m) => (
-                  <option key={m.id} value={m.id}>{m.nama} ({m.rpm} RPM)</option>
+                  <option key={m.id} value={m.id}>{m.nama} (maks {m.rpm} RPM)</option>
                 ))}
               </select>
+            </div>
+
+            {/* Kecepatan aktual */}
+            <div>
+              <label className="label">Speed Aktual (RPM)</label>
+              <input
+                className="input"
+                type="number"
+                placeholder={mesinTerpilih ? `maks mesin: ${mesinTerpilih.rpm}` : 'pilih mesin dulu'}
+                value={form.kecepatan}
+                onChange={(e) => setForm({ ...form, kecepatan: e.target.value })}
+              />
+              <p className="text-xs text-gray-400 mt-0.5">
+                {mesinTerpilih && form.kecepatan && +form.kecepatan !== mesinTerpilih.rpm
+                  ? `↓ diturunkan dari ${mesinTerpilih.rpm} RPM`
+                  : 'otomatis diisi dari mesin, bisa diubah'}
+              </p>
             </div>
 
             {/* Produk */}
@@ -136,14 +165,20 @@ export default function InputProduksi() {
             </div>
 
             {/* Preview kapasitas */}
-            {kapasitasPreview !== null && (
-              <div className="flex items-center gap-2 bg-blue-50 text-blue-700 rounded-lg px-3 py-2.5 text-sm">
-                <Info size={15} className="shrink-0" />
-                <div>
-                  <strong>Kapasitas teoritis: {kapasitasPreview} item</strong>
-                  {efisiensiPreview !== null && (
-                    <span className="ml-2 text-blue-500">→ efisiensi saat ini: {formatAngka(efisiensiPreview)}%</span>
-                  )}
+            {kapasitasPreview !== null && produkTerpilih && (
+              <div className="sm:col-span-2 flex items-start gap-2 bg-blue-50 text-blue-700 rounded-lg px-3 py-2.5 text-sm">
+                <Info size={15} className="shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <div>
+                    <strong>Kapasitas teoritis: {kapasitasPreview} item</strong>
+                    {efisiensiPreview !== null && (
+                      <span className="ml-2 text-blue-500">→ efisiensi: {formatAngka(efisiensiPreview)}%</span>
+                    )}
+                  </div>
+                  <div className="text-blue-500 text-xs">
+                    {kecepatanEfektif} RPM · {produkTerpilih.stitchCount.toLocaleString('id-ID')} stitch
+                    · {formatAngka(produkTerpilih.stitchCount / kecepatanEfektif, 2)} menit/item
+                  </div>
                 </div>
               </div>
             )}
@@ -211,8 +246,10 @@ export default function InputProduksi() {
               const op = getOperatorById(c.operatorId)
               const m = getMesinById(c.mesinId)
               const p = getProdukById(c.produkId)
-              const kapasitas = m && p ? hitungKapasitasTeoritis(c.jamKerja, m.rpm, p.stitchCount) : 0
+              const speed = c.kecepatan || m?.rpm || 0
+              const kapasitas = m && p ? hitungKapasitasTeoritis(c.jamKerja, speed, p.stitchCount) : 0
               const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
+              const speedTurun = m && c.kecepatan && c.kecepatan < m.rpm
               return (
                 <div key={c.id} className="border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50 flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -221,7 +258,11 @@ export default function InputProduksi() {
                       {op?.nama ?? '?'} · {m?.nama ?? '?'}
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      {p?.nama ?? '?'} ({p?.tipeBordir}) · {c.aktual} item aktual · {c.reject} reject · efisiensi {formatAngka(efisiensi)}%
+                      {p?.nama ?? '?'} ({p?.tipeBordir})
+                      · <span className="font-medium text-gray-600">{speed} RPM</span>
+                      {speedTurun && <span className="text-amber-500"> ↓diturunkan</span>}
+                      · {p?.stitchCount?.toLocaleString('id-ID')} stitch
+                      · {c.aktual} item · {c.reject} reject · efisiensi {formatAngka(efisiensi)}%
                     </div>
                     {c.catatan && <div className="text-xs text-gray-400 mt-0.5 italic">{c.catatan}</div>}
                   </div>

@@ -33,8 +33,9 @@ function FormMesin({ initial, onSave, onCancel }) {
         <input className="input" value={f.nama} onChange={(e) => setF({ ...f, nama: e.target.value })} placeholder="cth: Mesin 1 - Brother" />
       </div>
       <div>
-        <label className="label">RPM (stitch/menit) *</label>
+        <label className="label">Kecepatan Maks (RPM) *</label>
         <input className="input" type="number" value={f.rpm} onChange={(e) => setF({ ...f, rpm: e.target.value })} placeholder="850" />
+        <p className="text-xs text-gray-400 mt-0.5">Kecepatan penuh mesin ini</p>
       </div>
       <div>
         <label className="label">Daya (Watt) *</label>
@@ -88,7 +89,7 @@ function TableMesin() {
                 <div className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50">
                   <div>
                     <div className="font-medium text-gray-700 text-sm">{m.nama}</div>
-                    <div className="text-xs text-gray-400">{m.rpm} RPM · {m.dayaWatt}W {m.keterangan && `· ${m.keterangan}`}</div>
+                    <div className="text-xs text-gray-400">Maks {m.rpm} RPM · {m.dayaWatt}W {m.keterangan && `· ${m.keterangan}`}</div>
                   </div>
                   <div className="flex gap-2">
                     <button className="text-gray-400 hover:text-blue-500" onClick={() => setEditId(m.id)}><Pencil size={15} /></button>

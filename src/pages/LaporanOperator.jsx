@@ -44,7 +44,8 @@ export default function LaporanOperator() {
       const m = getMesinById(c.mesinId)
       const p = getProdukById(c.produkId)
       if (!m || !p) continue
-      const kapasitas = hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, m.rpm, p.stitchCount)
+      const speed = c.kecepatan || m.rpm
+      const kapasitas = hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, speed, p.stitchCount)
       const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
       if (!map[c.operatorId]) {
         map[c.operatorId] = {
@@ -96,7 +97,8 @@ export default function LaporanOperator() {
       const m = getMesinById(c.mesinId)
       const p = getProdukById(c.produkId)
       if (!m || !p) continue
-      const kapasitas = hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, m.rpm, p.stitchCount)
+      const speed = c.kecepatan || m.rpm
+      const kapasitas = hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, speed, p.stitchCount)
       const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
       if (!byDate[c.tanggal]) byDate[c.tanggal] = { tanggal: c.tanggal, efisiensiList: [], aktual: 0 }
       byDate[c.tanggal].efisiensiList.push(efisiensi)

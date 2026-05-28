@@ -26,8 +26,9 @@ export default function Dashboard() {
       const m = getMesinById(c.mesinId)
       const p = getProdukById(c.produkId)
       const o = getOperatorById(c.operatorId)
+      const speed = c.kecepatan || m?.rpm || 0
       const kapasitas = p && m
-        ? hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, m.rpm, p.stitchCount)
+        ? hitungKapasitasTeoritis(c.jamKerja ?? settings.jamKerjaPerShift, speed, p.stitchCount)
         : 0
       const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
       totalAktual += c.aktual
@@ -114,6 +115,8 @@ export default function Dashboard() {
                   <th className="pb-2 font-medium">Operator</th>
                   <th className="pb-2 font-medium">Mesin</th>
                   <th className="pb-2 font-medium">Produk</th>
+                  <th className="pb-2 font-medium text-right">Speed</th>
+                  <th className="pb-2 font-medium text-right">Stitch</th>
                   <th className="pb-2 font-medium text-right">Target</th>
                   <th className="pb-2 font-medium text-right">Aktual</th>
                   <th className="pb-2 font-medium text-right">Reject</th>
@@ -133,6 +136,15 @@ export default function Dashboard() {
                           ({row.produk.tipeBordir})
                         </span>
                       )}
+                    </td>
+                    <td className="py-2.5 text-right text-gray-600">
+                      {(row.kecepatan || row.mesin?.rpm) ?? '-'}
+                      {row.mesin && row.kecepatan && row.kecepatan < row.mesin.rpm && (
+                        <span className="ml-1 text-amber-400 text-xs">↓</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 text-right text-gray-500 text-xs">
+                      {row.produk?.stitchCount?.toLocaleString('id-ID') ?? '-'}
                     </td>
                     <td className="py-2.5 text-right text-gray-500">{row.kapasitas}</td>
                     <td className="py-2.5 text-right font-medium text-gray-800">{row.aktual}</td>
