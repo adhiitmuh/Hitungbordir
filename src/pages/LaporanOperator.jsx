@@ -5,8 +5,9 @@ import {
 } from 'recharts'
 import {
   TrendingUp, AlertTriangle, CheckCircle2, Info,
-  Zap, Clock, Gauge, ChevronDown, ChevronUp
+  Zap, Clock, Gauge, ChevronDown, ChevronUp, Camera
 } from 'lucide-react'
+import FotoUpload from '../components/FotoUpload'
 import useAppStore from '../store/appStore'
 import {
   hitungKapasitasTeoritis, hitungEfisiensi, statusPerforma,
@@ -76,7 +77,7 @@ function prosesDataOperator(catatanFiltered, settings, getMesinById, getProdukBy
         totalAktual: 0, totalKapasitas: 0, totalReject: 0, totalCatatan: 0,
         efisiensiList: [], utilisasiList: [], rpmEfektifList: [],
         totalDowntimeMenit: 0, alasanList: [],
-        rpmMaksList: [],
+        rpmMaksList: [], catatanList: [],
       }
     }
     const d = map[c.operatorId]
@@ -90,6 +91,7 @@ function prosesDataOperator(catatanFiltered, settings, getMesinById, getProdukBy
     d.totalDowntimeMenit += c.menitBerhenti ?? 0
     if (c.alasanBerhenti) d.alasanList.push(c.alasanBerhenti)
     d.rpmMaksList.push(rpmMaks)
+    d.catatanList.push(c)
   }
 
   const semuaEfisiensiRata = Object.values(map).map((d) =>
@@ -124,6 +126,7 @@ function prosesDataOperator(catatanFiltered, settings, getMesinById, getProdukBy
       efisiensiRata, utilisasiRata, rpmEfektifRata, rpmMaksRata,
       rejectRate, normalitas, status: statusPerforma(efisiensiRata),
       evaluasi,
+      catatanList: d.catatanList,
     }
   }).sort((a, b) => b.efisiensiRata - a.efisiensiRata)
 }
@@ -282,6 +285,38 @@ function KartuEvaluasi({ r }) {
               {r.normalitas.normal
                 ? `Normal (z-score: ${formatAngka(r.normalitas.zscore, 2)})`
                 : `Di bawah rata-rata grup (z-score: ${formatAngka(r.normalitas.zscore, 2)}, rata-rata grup: ${formatAngka(r.normalitas.rata)}%)`}
+            </div>
+          )}
+
+          {/* Foto Bukti */}
+          {r.catatanList?.some((c) => c.fotoSebelum || c.fotoSetelah) && (
+            <div>
+              <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
+                <Camera size={14} className="text-blue-500" />
+                Foto Bukti Kerja
+              </div>
+              <div className="space-y-3">
+                {r.catatanList
+                  .filter((c) => c.fotoSebelum || c.fotoSetelah)
+                  .sort((a, b) => b.tanggal.localeCompare(a.tanggal))
+                  .slice(0, 5)
+                  .map((c) => (
+                    <div key={c.id} className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-400 mb-2">
+                        {new Date(c.tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {c.jamMulai && c.jamSelesai && ` · ${c.jamMulai}–${c.jamSelesai}`}
+                      </div>
+                      <div className="flex gap-4 flex-wrap">
+                        {c.fotoSebelum && (
+                          <FotoUpload label="Sebelum" value={c.fotoSebelum} onChange={() => {}} disabled />
+                        )}
+                        {c.fotoSetelah && (
+                          <FotoUpload label="Setelah" value={c.fotoSetelah} onChange={() => {}} disabled />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
         </div>

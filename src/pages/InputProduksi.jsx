@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Plus, Trash2, ClipboardCheck, Info, Clock } from 'lucide-react'
+import { Plus, Trash2, ClipboardCheck, Info, Clock, Camera } from 'lucide-react'
 import useAppStore from '../store/appStore'
 import useAuthStore from '../store/authStore'
+import FotoUpload from '../components/FotoUpload'
 import {
   hitungKapasitasTeoritis, hitungEfisiensi, hitungSelisihMenit,
   hitungWaktuAktif, hitungUtilisasi, hitungRpmEfektif, formatAngka
@@ -29,6 +30,8 @@ function emptyForm(operatorId = '') {
     aktual: '',
     reject: '',
     catatan: '',
+    fotoSebelum: null,
+    fotoSetelah: null,
   }
 }
 
@@ -84,6 +87,8 @@ export default function InputProduksi() {
       aktual: +form.aktual,
       reject: +form.reject || 0,
       catatan: form.catatan,
+      fotoSebelum: form.fotoSebelum,
+      fotoSetelah: form.fotoSetelah,
     })
     setForm(emptyForm(sessionOpId ?? ''))
     setSaved(true)
@@ -275,6 +280,27 @@ export default function InputProduksi() {
                 value={form.catatan}
                 onChange={(e) => setForm({ ...form, catatan: e.target.value })} />
             </div>
+
+            {/* Foto Bukti Kerja */}
+            <div className="sm:col-span-2">
+              <div className="flex items-center gap-2 mb-3">
+                <Camera size={14} className="text-blue-500" />
+                <span className="text-sm font-medium text-gray-700">Foto Bukti Kerja</span>
+                <span className="text-xs text-gray-400">(opsional)</span>
+              </div>
+              <div className="flex gap-6 flex-wrap">
+                <FotoUpload
+                  label="Foto Sebelum Kerja"
+                  value={form.fotoSebelum}
+                  onChange={(v) => setForm({ ...form, fotoSebelum: v })}
+                />
+                <FotoUpload
+                  label="Foto Setelah Kerja"
+                  value={form.fotoSetelah}
+                  onChange={(v) => setForm({ ...form, fotoSetelah: v })}
+                />
+              </div>
+            </div>
           </div>
 
           <button type="submit" className="btn-primary flex items-center gap-2" disabled={!formValid}>
@@ -342,6 +368,16 @@ export default function InputProduksi() {
                         </div>
                       )}
                       {c.catatan && <div className="text-xs text-gray-400 italic">{c.catatan}</div>}
+                      {(c.fotoSebelum || c.fotoSetelah) && (
+                        <div className="flex gap-2 mt-1">
+                          {c.fotoSebelum && (
+                            <FotoUpload label="Sebelum" value={c.fotoSebelum} onChange={() => {}} disabled />
+                          )}
+                          {c.fotoSetelah && (
+                            <FotoUpload label="Setelah" value={c.fotoSetelah} onChange={() => {}} disabled />
+                          )}
+                        </div>
+                      )}
                     </div>
                     {!isStaff && (
                       <button className="text-gray-300 hover:text-red-400 shrink-0" onClick={() => hapusCatatan(c.id)}>
