@@ -114,7 +114,7 @@ function prosesDataOperator(catatanFiltered, settings, getMesinById, getProdukBy
     const op = getOperatorById(d.operatorId)
 
     const evaluasi = evaluasiKinerja({
-      utilisasi: utilisasiRata ?? 80,
+      utilisasi: utilisasiRata,
       efisiensi: efisiensiRata,
       rpmEfektif: rpmEfektifRata ?? 0,
       rpmMaks: rpmMaksRata,
@@ -325,9 +325,15 @@ function KartuEvaluasi({ r }) {
   )
 }
 
-function TabEvaluasi({ data }) {
+function TabEvaluasi({ data, filterOp }) {
   if (data.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-8">Tidak ada data untuk dievaluasi.</p>
+    return (
+      <p className="text-sm text-gray-400 text-center py-8">
+        {filterOp
+          ? 'Operator ini tidak memiliki data dalam rentang waktu yang dipilih.'
+          : 'Tidak ada data untuk dievaluasi.'}
+      </p>
+    )
   }
   return (
     <div className="space-y-3">
@@ -361,7 +367,7 @@ function GrafikTren({ data, rpmMaks }) {
 
 // ── Main page ──────────────────────────────────────────────────
 export default function LaporanOperator() {
-  const { catatanProduksi, operator, settings, getMesinById, getProdukById, getOperatorById } = useAppStore()
+  const { catatanProduksi, operator, mesin, produk, settings, getMesinById, getProdukById, getOperatorById } = useAppStore()
   const [rentangIdx, setRentangIdx] = useState(0)
   const [filterOp, setFilterOp] = useState('')
   const [activeTab, setActiveTab] = useState('ringkasan') // 'ringkasan' | 'evaluasi'
@@ -375,7 +381,7 @@ export default function LaporanOperator() {
 
   const semuaData = useMemo(
     () => prosesDataOperator(catatanFiltered, settings, getMesinById, getProdukById, getOperatorById),
-    [catatanFiltered, settings]
+    [catatanFiltered, settings, operator, mesin, produk]
   )
 
   const dataTersaring = filterOp
@@ -464,7 +470,7 @@ export default function LaporanOperator() {
         <TabRingkasan data={dataTersaring} filterOp={filterOp} setFilterOp={setFilterOp} operator={operator} />
       )}
       {activeTab === 'evaluasi' && (
-        <TabEvaluasi data={dataTersaring.length ? dataTersaring : semuaData} />
+        <TabEvaluasi data={dataTersaring} filterOp={filterOp} />
       )}
 
       {/* Legenda */}

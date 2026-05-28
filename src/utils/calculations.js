@@ -141,7 +141,7 @@ export function hitungSelisihMenit(jamMulai, jamSelesai) {
   const [h1, m1] = jamMulai.split(':').map(Number)
   const [h2, m2] = jamSelesai.split(':').map(Number)
   let total = (h2 * 60 + m2) - (h1 * 60 + m1)
-  if (total <= 0) total += 24 * 60 // lintas tengah malam
+  if (total < 0) total += 24 * 60 // lintas tengah malam
   return total
 }
 
@@ -190,13 +190,15 @@ export function evaluasiKinerja({ utilisasi, efisiensi, rpmEfektif, rpmMaks, rej
     rekomendasi.push(`Reject cukup tinggi (${formatAngka(rejectRate)}%). Pantau kualitas jahitan dan kondisi mesin.`)
   }
 
-  // Utilisasi
-  if (utilisasi < 60) {
-    masalah.push('utilisasi_rendah')
-    rekomendasi.push(`Utilisasi waktu rendah (${formatAngka(utilisasi)}%). Lebih dari sepertiga waktu kerja tidak produktif. Identifikasi penyebab berhenti.`)
-  } else if (utilisasi < 75) {
-    masalah.push('utilisasi_sedang')
-    rekomendasi.push(`Utilisasi ${formatAngka(utilisasi)}% — masih ada ruang untuk mengurangi downtime.`)
+  // Utilisasi (null = tidak ada data jam, skip pengecekan)
+  if (utilisasi != null) {
+    if (utilisasi < 60) {
+      masalah.push('utilisasi_rendah')
+      rekomendasi.push(`Utilisasi waktu rendah (${formatAngka(utilisasi)}%). Lebih dari sepertiga waktu kerja tidak produktif. Identifikasi penyebab berhenti.`)
+    } else if (utilisasi < 75) {
+      masalah.push('utilisasi_sedang')
+      rekomendasi.push(`Utilisasi ${formatAngka(utilisasi)}% — masih ada ruang untuk mengurangi downtime.`)
+    }
   }
 
   // RPM efektif vs maks

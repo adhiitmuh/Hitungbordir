@@ -97,6 +97,7 @@ export default function KalkulasiModal() {
     const dayaWatt = m?.dayaWatt ?? 250
     const kapasitasTeoritis = hitungKapasitasTeoritis(+jamKerja, rpm, stitchCount)
     const totalProduksi = +produksiAktual || kapasitasTeoritis
+    if (!totalProduksi) return null
     const waktuMenit = hitungWaktuPerItem(rpm, stitchCount)
 
     let biayaBenangAtas = 0
@@ -113,7 +114,7 @@ export default function KalkulasiModal() {
 
     const biayaListrik = hitungBiayaListrik(dayaWatt, waktuMenit, tarif)
     const gajiPerItem = hitungGajiPerItem(gaji, totalProduksi)
-    const overheadPerItem = overhead / totalProduksi
+    const overheadPerItem = totalProduksi > 0 ? overhead / totalProduksi : 0
     const totalBenang = adaBenangMaster ? biayaBenangAtas + biayaBenangBawah : biayaBenangManual
     const total = totalBenang + biayaListrik + gajiPerItem + overheadPerItem
 
@@ -202,6 +203,11 @@ export default function KalkulasiModal() {
                   ))}
                 </select>
               </div>
+              {!benangAtasId && !benangBawahId && (
+                <div className="col-span-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
+                  Belum ada benang dipilih — biaya benang tidak dihitung. Pilih minimal satu benang untuk hasil yang akurat.
+                </div>
+              )}
             </>
           ) : (
             <div>

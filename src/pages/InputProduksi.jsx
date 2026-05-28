@@ -40,7 +40,7 @@ function emptyForm(operatorId = '') {
 export default function InputProduksi() {
   const {
     operator, mesin, produk, benang, settings, catatanProduksi,
-    tambahCatatan, hapusCatatan, getMesinById, getProdukById, getOperatorById
+    tambahCatatan, hapusCatatan, getMesinById, getProdukById, getOperatorById, getBenangById
   } = useAppStore()
   const { role, operatorId: sessionOpId } = useAuthStore()
 
@@ -165,8 +165,11 @@ export default function InputProduksi() {
                 placeholder={mesinTerpilih ? `maks: ${mesinTerpilih.rpm}` : '—'}
                 value={form.kecepatan}
                 onChange={(e) => setForm({ ...form, kecepatan: e.target.value })} />
-              {mesinTerpilih && form.kecepatan && +form.kecepatan !== mesinTerpilih.rpm && (
+              {mesinTerpilih && form.kecepatan && +form.kecepatan < mesinTerpilih.rpm && (
                 <p className="text-xs text-amber-500 mt-0.5">↓ diturunkan dari {mesinTerpilih.rpm} RPM</p>
+              )}
+              {mesinTerpilih && form.kecepatan && +form.kecepatan > mesinTerpilih.rpm && (
+                <p className="text-xs text-red-500 mt-0.5">⚠ melebihi kapasitas maks {mesinTerpilih.rpm} RPM</p>
               )}
             </div>
 
@@ -395,6 +398,12 @@ export default function InputProduksi() {
                       {c.alasanBerhenti && (
                         <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-0.5 inline-block">
                           Berhenti: {c.alasanBerhenti}
+                        </div>
+                      )}
+                      {(c.benangAtasId || c.benangBawahId) && (
+                        <div className="text-xs text-purple-600 flex gap-3 flex-wrap">
+                          {c.benangAtasId && <span>↑ {getBenangById(c.benangAtasId)?.nama ?? '?'}</span>}
+                          {c.benangBawahId && <span>↓ {getBenangById(c.benangBawahId)?.nama ?? '?'}</span>}
                         </div>
                       )}
                       {c.catatan && <div className="text-xs text-gray-400 italic">{c.catatan}</div>}
