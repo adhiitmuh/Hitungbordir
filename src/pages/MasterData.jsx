@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Cpu, Users, Package, Settings2, Trash2, Pencil, Plus, Save, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Cpu, Users, Package, Settings2, Trash2, Pencil, Plus, Save, X, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
 import useAppStore, { KATEGORI_PRODUK, TIPE_BORDIR } from '../store/appStore'
-import { formatRupiah } from '../utils/calculations'
+import { formatRupiah, formatAngka, hitungHargaBenangDariCone } from '../utils/calculations'
 
 function Section({ title, icon: Icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -298,11 +298,65 @@ function TableProduk() {
   )
 }
 
+// ── Kalkulator Harga Benang dari Cone ────────────────────────
+function KalkulatorCone({ onApply }) {
+  const [cone, setCone] = useState({ harga: '', meter: '', meterPer1000: '12' })
+  const hasil = (cone.harga && cone.meter)
+    ? hitungHargaBenangDariCone(+cone.harga, +cone.meter, +cone.meterPer1000 || 12)
+    : null
+
+  return (
+    <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+      <div className="text-sm font-medium text-blue-700">Hitung dari harga cone benang</div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="label text-blue-700">Harga per cone (Rp)</label>
+          <input className="input" type="number" placeholder="cth: 15000"
+            value={cone.harga} onChange={(e) => setCone({ ...cone, harga: e.target.value })} />
+        </div>
+        <div>
+          <label className="label text-blue-700">Panjang benang (meter)</label>
+          <input className="input" type="number" placeholder="cth: 1000"
+            value={cone.meter} onChange={(e) => setCone({ ...cone, meter: e.target.value })} />
+          <p className="text-xs text-gray-400 mt-0.5">Tertera di label cone</p>
+        </div>
+        <div>
+          <label className="label text-blue-700">Pemakaian per 1.000 stitch (m)</label>
+          <input className="input" type="number" step="0.5" placeholder="12"
+            value={cone.meterPer1000} onChange={(e) => setCone({ ...cone, meterPer1000: e.target.value })} />
+          <p className="text-xs text-gray-400 mt-0.5">Rata-rata bordir: 10–14 m</p>
+        </div>
+      </div>
+
+      {hasil && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm">
+            <span className="text-gray-500">Harga/meter: </span>
+            <strong className="text-gray-800">{formatRupiah(hasil.hargaPerMeter)}</strong>
+          </div>
+          <ArrowRight size={14} className="text-blue-400 shrink-0" />
+          <div className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm">
+            <span className="text-gray-500">Harga per 1.000 stitch: </span>
+            <strong className="text-blue-700">{formatRupiah(hasil.hargaPer1000Stitch)}</strong>
+          </div>
+          <button
+            className="btn-primary text-xs py-1.5"
+            onClick={() => onApply(hasil.hargaPer1000Stitch)}
+          >
+            Pakai nilai ini →
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Pengaturan Global ─────────────────────────────────────────
 function PengaturanGlobal() {
   const { settings, updateSettings } = useAppStore()
   const [f, setF] = useState(settings)
   const [saved, setSaved] = useState(false)
+  const [showKalkCone, setShowKalkCone] = useState(false)
 
   function handleSave() {
     updateSettings({
@@ -324,8 +378,27 @@ function PengaturanGlobal() {
       </div>
       <div>
         <label className="label">Harga Benang per 1.000 stitch (Rp)</label>
-        <input className="input" type="number" value={f.hargaBenangPer1000Stitch} onChange={(e) => setF({ ...f, hargaBenangPer1000Stitch: e.target.value })} />
+        <div className="flex gap-2">
+          <input className="input" type="number" value={f.hargaBenangPer1000Stitch}
+            onChange={(e) => setF({ ...f, hargaBenangPer1000Stitch: e.target.value })} />
+          <button
+            className="btn-secondary text-xs shrink-0 whitespace-nowrap"
+            onClick={() => setShowKalkCone(!showKalkCone)}
+          >
+            {showKalkCone ? 'Tutup' : '📐 Hitung dari cone'}
+          </button>
+        </div>
       </div>
+
+      {showKalkCone && (
+        <KalkulatorCone
+          onApply={(nilai) => {
+            setF({ ...f, hargaBenangPer1000Stitch: String(Math.round(nilai)) })
+            setShowKalkCone(false)
+          }}
+        />
+      )}
+
       <div>
         <label className="label">Gaji Harian Default (Rp)</label>
         <input className="input" type="number" value={f.gajiHarianDefault} onChange={(e) => setF({ ...f, gajiHarianDefault: e.target.value })} />

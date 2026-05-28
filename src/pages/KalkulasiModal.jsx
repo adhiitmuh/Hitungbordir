@@ -1,10 +1,52 @@
 import { useState, useMemo } from 'react'
-import { Calculator, Info } from 'lucide-react'
+import { Calculator, Info, ArrowRight } from 'lucide-react'
 import useAppStore from '../store/appStore'
 import {
   hitungKapasitasTeoritis, hitungWaktuPerItem, hitungBiayaBenang,
-  hitungBiayaListrik, hitungGajiPerItem, formatRupiah, formatAngka
+  hitungBiayaListrik, hitungGajiPerItem, hitungHargaBenangDariCone,
+  formatRupiah, formatAngka
 } from '../utils/calculations'
+
+function KalkulatorConeInline({ onApply }) {
+  const [cone, setCone] = useState({ harga: '', meter: '', meterPer1000: '12' })
+  const hasil = (cone.harga && cone.meter)
+    ? hitungHargaBenangDariCone(+cone.harga, +cone.meter, +cone.meterPer1000 || 12)
+    : null
+  return (
+    <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
+      <div className="text-xs font-medium text-blue-700">Hitung harga benang dari cone</div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="label text-xs text-blue-700">Harga/cone (Rp)</label>
+          <input className="input text-sm" type="number" placeholder="cth: 15000"
+            value={cone.harga} onChange={(e) => setCone({ ...cone, harga: e.target.value })} />
+        </div>
+        <div>
+          <label className="label text-xs text-blue-700">Panjang cone (m)</label>
+          <input className="input text-sm" type="number" placeholder="cth: 1000"
+            value={cone.meter} onChange={(e) => setCone({ ...cone, meter: e.target.value })} />
+        </div>
+        <div>
+          <label className="label text-xs text-blue-700">Meter/1.000 stitch</label>
+          <input className="input text-sm" type="number" step="0.5" placeholder="12"
+            value={cone.meterPer1000} onChange={(e) => setCone({ ...cone, meterPer1000: e.target.value })} />
+        </div>
+      </div>
+      {hasil && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500">Rp/meter: <strong>{formatRupiah(hasil.hargaPerMeter)}</strong></span>
+          <ArrowRight size={12} className="text-blue-400" />
+          <span className="text-xs text-blue-700 font-semibold">
+            Rp/1.000 stitch: {formatRupiah(hasil.hargaPer1000Stitch)}
+          </span>
+          <button className="btn-primary text-xs py-1" onClick={() => onApply(hasil.hargaPer1000Stitch)}>
+            Pakai →
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function RowBiaya({ label, nilai, persen, highlight }) {
   return (
@@ -31,6 +73,7 @@ export default function KalkulasiModal() {
   const [tarifCustom, setTarifCustom] = useState('')
   const [benangCustom, setBenangCustom] = useState('')
   const [overheadCustom, setOverheadCustom] = useState('')
+  const [showKalkCone, setShowKalkCone] = useState(false)
 
   const p = produk.find((x) => x.id === produkId)
   const m = mesin.find((x) => x.id === mesinId)
@@ -122,9 +165,26 @@ export default function KalkulasiModal() {
 
           <div>
             <label className="label">Harga Benang / 1.000 stitch (Rp)</label>
-            <input className="input" type="number" placeholder={`default: ${formatRupiah(settings.hargaBenangPer1000Stitch)}`}
-              value={benangCustom} onChange={(e) => setBenangCustom(e.target.value)} />
+            <div className="flex gap-2">
+              <input className="input" type="number" placeholder={`default: ${formatRupiah(settings.hargaBenangPer1000Stitch)}`}
+                value={benangCustom} onChange={(e) => setBenangCustom(e.target.value)} />
+              <button
+                className="btn-secondary text-xs shrink-0 whitespace-nowrap"
+                onClick={() => setShowKalkCone(!showKalkCone)}
+              >
+                {showKalkCone ? 'Tutup' : 'Hitung dari cone'}
+              </button>
+            </div>
           </div>
+
+          {showKalkCone && (
+            <KalkulatorConeInline
+              onApply={(nilai) => {
+                setBenangCustom(String(Math.round(nilai * 10) / 10))
+                setShowKalkCone(false)
+              }}
+            />
+          )}
 
           <div>
             <label className="label">Tarif Listrik (Rp/kWh)</label>
