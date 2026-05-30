@@ -35,12 +35,12 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-harmoni-green-dark to-harmoni-green flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="text-3xl font-bold text-white">Harmoni Bordir</div>
-          <div className="text-blue-200 text-sm mt-1">Kalkulator Produksi Bordir</div>
+          <div className="text-3xl font-bold text-harmoni-beige tracking-wide">Harmoni Bordir</div>
+          <div className="text-harmoni-green-tint text-sm mt-1 opacity-80">Kalkulator Produksi Bordir</div>
         </div>
 
         {/* Card */}
@@ -48,14 +48,14 @@ export default function Login() {
           {/* Tab */}
           <div className="flex border-b border-gray-100">
             <button
-              className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === 'staff' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === 'staff' ? 'text-harmoni-green border-b-2 border-harmoni-green' : 'text-gray-400 hover:text-gray-600'}`}
               onClick={() => { setTab('staff'); setError('') }}
             >
               <User size={14} className="inline mr-1.5" />
               Masuk sebagai Staff
             </button>
             <button
-              className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === 'admin' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === 'admin' ? 'text-harmoni-green border-b-2 border-harmoni-green' : 'text-gray-400 hover:text-gray-600'}`}
               onClick={() => { setTab('admin'); setError('') }}
             >
               <Lock size={14} className="inline mr-1.5" />

@@ -3,14 +3,18 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Raleway', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       colors: {
-        brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          900: '#1e3a8a',
+        harmoni: {
+          green:        '#1E4645',
+          'green-dark': '#162F2E',
+          'green-mid':  '#2A5B5A',
+          'green-tint': '#E6EEEE',
+          beige:        '#FBF9D8',
+          'beige-dark': '#F0EDBB',
+          black:        '#2D2D2D',
         },
       },
     },
