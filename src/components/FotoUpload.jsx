@@ -63,7 +63,7 @@ export default function FotoUpload({ label, value, onChange, disabled }) {
           type="button"
           disabled={disabled || loading}
           onClick={() => inputRef.current?.click()}
-          className="h-24 w-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-blue-400 hover:text-blue-400 transition-colors disabled:opacity-50"
+          className="h-24 w-24 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-harmoni-green-mid hover:text-harmoni-green-mid transition-colors disabled:opacity-50"
         >
           <Camera size={20} />
           <span className="text-xs">{loading ? 'Proses...' : 'Ambil foto'}</span>

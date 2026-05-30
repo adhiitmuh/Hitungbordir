@@ -13,22 +13,22 @@ function KalkulatorGulunganInline({ onApply }) {
     ? hitungHargaBenangDariCone(+g.harga, +g.meter, +g.meterPer1000 || 12)
     : null
   return (
-    <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
-      <div className="text-xs font-medium text-blue-700">Hitung harga benang dari gulungan</div>
+    <div className="col-span-2 bg-harmoni-green-tint border border-harmoni-green-tint rounded-xl p-3 space-y-2">
+      <div className="text-xs font-medium text-harmoni-green">Hitung harga benang dari gulungan</div>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="label text-xs text-blue-700">Harga/gulungan (Rp)</label>
+          <label className="label text-xs text-harmoni-green">Harga/gulungan (Rp)</label>
           <input className="input text-sm" type="number" placeholder="cth: 15000"
             value={g.harga} onChange={(e) => setG({ ...g, harga: e.target.value })} />
         </div>
         <div>
-          <label className="label text-xs text-blue-700">Panjang gulungan (m)</label>
+          <label className="label text-xs text-harmoni-green">Panjang gulungan (m)</label>
           <input className="input text-sm" type="number" placeholder="cth: 1000"
             value={g.meter} onChange={(e) => setG({ ...g, meter: e.target.value })} />
           <p className="text-xs text-gray-400 mt-0.5">Tertera di label gulungan</p>
         </div>
         <div>
-          <label className="label text-xs text-blue-700">Meter/1.000 stitch</label>
+          <label className="label text-xs text-harmoni-green">Meter/1.000 stitch</label>
           <input className="input text-sm" type="number" step="0.5" placeholder="12"
             value={g.meterPer1000} onChange={(e) => setG({ ...g, meterPer1000: e.target.value })} />
           <p className="text-xs text-gray-400 mt-0.5">Rata-rata: 10–14 m</p>
@@ -37,8 +37,8 @@ function KalkulatorGulunganInline({ onApply }) {
       {hasil && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-gray-500">Rp/meter: <strong>{formatRupiah(hasil.hargaPerMeter)}</strong></span>
-          <ArrowRight size={12} className="text-blue-400" />
-          <span className="text-xs text-blue-700 font-semibold">
+          <ArrowRight size={12} className="text-harmoni-green-mid" />
+          <span className="text-xs text-harmoni-green font-semibold">
             Rp/1.000 stitch: {formatRupiah(hasil.hargaPer1000Stitch)}
           </span>
           <button className="btn-primary text-xs py-1" onClick={() => onApply(hasil.hargaPer1000Stitch)}>
@@ -134,7 +134,7 @@ export default function KalkulasiModal() {
       {/* Input */}
       <div className="card space-y-4">
         <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-          <Calculator size={16} className="text-blue-500" />
+          <Calculator size={16} className="text-harmoni-green" />
           Parameter Kalkulasi
         </h2>
 
@@ -327,7 +327,7 @@ export default function KalkulasiModal() {
             <p className="text-xs text-gray-400 mb-1">Komposisi Modal</p>
             <div className="flex rounded-full overflow-hidden h-4">
               {[
-                { val: hasil.totalBenang, color: 'bg-blue-400' },
+                { val: hasil.totalBenang, color: 'bg-harmoni-green-mid' },
                 { val: hasil.biayaListrik, color: 'bg-yellow-400' },
                 { val: hasil.gajiPerItem, color: 'bg-green-400' },
                 { val: hasil.overheadPerItem, color: 'bg-purple-400' },
@@ -338,7 +338,7 @@ export default function KalkulasiModal() {
             </div>
             <div className="flex gap-3 mt-1.5 flex-wrap">
               {[
-                { color: 'bg-blue-400', label: 'Benang', val: hasil.totalBenang },
+                { color: 'bg-harmoni-green-mid', label: 'Benang', val: hasil.totalBenang },
                 { color: 'bg-yellow-400', label: 'Listrik', val: hasil.biayaListrik },
                 { color: 'bg-green-400', label: 'Gaji', val: hasil.gajiPerItem },
                 { color: 'bg-purple-400', label: 'Overhead', val: hasil.overheadPerItem },
@@ -352,7 +352,7 @@ export default function KalkulasiModal() {
           </div>
 
           {hasil.biayaListrik < 1 && (
-            <div className="mt-3 flex items-start gap-2 bg-blue-50 text-blue-600 text-xs rounded-lg px-3 py-2">
+            <div className="mt-3 flex items-start gap-2 bg-harmoni-green-tint text-harmoni-green text-xs rounded-lg px-3 py-2">
               <Info size={13} className="shrink-0 mt-0.5" />
               Biaya listrik sangat kecil karena mesin bordir berdaya rendah. Komponen terbesar biasanya adalah upah operator.
             </div>

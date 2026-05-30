@@ -25,7 +25,7 @@ function BadgeStatus({ status }) {
 
 const VERDICT_CONFIG = {
   optimal:           { label: 'Sudah Optimal',         cls: 'bg-green-100 text-green-700',  icon: CheckCircle2 },
-  bisa_ditingkatkan: { label: 'Bisa Ditingkatkan',     cls: 'bg-blue-100 text-blue-700',    icon: TrendingUp },
+  bisa_ditingkatkan: { label: 'Bisa Ditingkatkan',     cls: 'bg-harmoni-green-tint text-harmoni-green',    icon: TrendingUp },
   cek_mesin:         { label: 'Cek Mesin / Speed',     cls: 'bg-yellow-100 text-yellow-700',icon: Gauge },
   cek_kualitas:      { label: 'Cek Kualitas / Reject', cls: 'bg-red-100 text-red-700',      icon: AlertTriangle },
   perlu_perhatian:   { label: 'Perlu Perhatian',       cls: 'bg-orange-100 text-orange-700',icon: AlertTriangle },
@@ -265,13 +265,13 @@ function KartuEvaluasi({ r }) {
           {/* Rekomendasi */}
           <div className="space-y-2">
             <div className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-              <Zap size={14} className="text-blue-500" />
+              <Zap size={14} className="text-harmoni-green" />
               Rekomendasi Sistem
             </div>
             <ul className="space-y-1.5">
               {r.evaluasi.rekomendasi.map((rek, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="text-blue-400 shrink-0 mt-0.5">•</span>
+                  <span className="text-harmoni-green-mid shrink-0 mt-0.5">•</span>
                   {rek}
                 </li>
               ))}
@@ -292,7 +292,7 @@ function KartuEvaluasi({ r }) {
           {r.catatanList?.some((c) => c.fotoSebelum || c.fotoSetelah) && (
             <div>
               <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
-                <Camera size={14} className="text-blue-500" />
+                <Camera size={14} className="text-harmoni-green" />
                 Foto Bukti Kerja
               </div>
               <div className="space-y-3">
@@ -423,7 +423,7 @@ export default function LaporanOperator() {
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-gray-800">Laporan Operator</h1>
         <div className="card text-center py-16 text-gray-400 text-sm">
-          Belum ada data produksi. Mulai dengan <a href="/input" className="text-blue-500 hover:underline">Input Produksi</a>.
+          Belum ada data produksi. Mulai dengan <a href="/input" className="text-harmoni-green hover:underline">Input Produksi</a>.
         </div>
       </div>
     )
@@ -437,7 +437,7 @@ export default function LaporanOperator() {
         <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
           {RENTANG.map((r, i) => (
             <button key={r.hari} onClick={() => setRentangIdx(i)}
-              className={`px-3 py-1.5 ${rentangIdx === i ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+              className={`px-3 py-1.5 ${rentangIdx === i ? 'bg-harmoni-green text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
               {r.label}
             </button>
           ))}
@@ -460,7 +460,7 @@ export default function LaporanOperator() {
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setActiveTab(key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px
-              ${activeTab === key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              ${activeTab === key ? 'border-harmoni-green text-harmoni-green' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             {label}
           </button>
         ))}
@@ -474,7 +474,7 @@ export default function LaporanOperator() {
       )}
 
       {/* Legenda */}
-      <div className="card bg-blue-50 border-blue-100 flex items-start gap-2 text-sm text-blue-700">
+      <div className="card bg-harmoni-green-tint border-harmoni-green-tint flex items-start gap-2 text-sm text-harmoni-green">
         <Info size={16} className="shrink-0 mt-0.5" />
         <div>
           <strong>Cara baca evaluasi:</strong>{' '}

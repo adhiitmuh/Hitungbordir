@@ -1,6 +1,6 @@
 export default function StatCard({ label, value, sub, icon: Icon, color = 'blue' }) {
   const colorMap = {
-    blue: 'bg-blue-50 text-blue-600',
+    blue: 'bg-harmoni-green-tint text-harmoni-green',
     green: 'bg-green-50 text-green-600',
     yellow: 'bg-yellow-50 text-yellow-600',
     red: 'bg-red-50 text-red-600',

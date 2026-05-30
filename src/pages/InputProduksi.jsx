@@ -128,7 +128,7 @@ export default function InputProduksi() {
 
             {/* Operator — hidden jika staff (auto dari session) */}
             {isStaff ? (
-              <div className="sm:col-span-2 bg-blue-50 rounded-lg px-3 py-2.5 text-sm text-blue-700 font-medium">
+              <div className="sm:col-span-2 bg-harmoni-green-tint rounded-lg px-3 py-2.5 text-sm text-harmoni-green font-medium">
                 Operator: {getOperatorById(sessionOpId)?.nama ?? '—'}
               </div>
             ) : (
@@ -216,7 +216,7 @@ export default function InputProduksi() {
             {/* ── Waktu kerja ── */}
             <div className="sm:col-span-2">
               <div className="flex items-center gap-2 mb-2">
-                <Clock size={14} className="text-blue-500" />
+                <Clock size={14} className="text-harmoni-green" />
                 <span className="text-sm font-medium text-gray-700">Waktu Kerja</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -249,24 +249,24 @@ export default function InputProduksi() {
 
             {/* Preview kalkulasi waktu */}
             {form.jamMulai && form.jamSelesai && (
-              <div className="sm:col-span-2 bg-blue-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div className="sm:col-span-2 bg-harmoni-green-tint rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 <div>
-                  <div className="text-xs text-blue-400">Durasi Total</div>
-                  <div className="font-semibold text-blue-700">{totalMenit} menit</div>
+                  <div className="text-xs text-harmoni-green-mid">Durasi Total</div>
+                  <div className="font-semibold text-harmoni-green">{totalMenit} menit</div>
                 </div>
                 <div>
-                  <div className="text-xs text-blue-400">Waktu Aktif</div>
-                  <div className="font-semibold text-blue-700">{waktuAktif} menit</div>
+                  <div className="text-xs text-harmoni-green-mid">Waktu Aktif</div>
+                  <div className="font-semibold text-harmoni-green">{waktuAktif} menit</div>
                 </div>
                 <div>
-                  <div className="text-xs text-blue-400">Utilisasi</div>
+                  <div className="text-xs text-harmoni-green-mid">Utilisasi</div>
                   <div className={`font-semibold ${utilisasiPreview >= 75 ? 'text-green-600' : utilisasiPreview >= 60 ? 'text-amber-500' : 'text-red-500'}`}>
                     {utilisasiPreview !== null ? `${formatAngka(utilisasiPreview)}%` : '—'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-blue-400">Kapasitas Teoritis</div>
-                  <div className="font-semibold text-blue-700">
+                  <div className="text-xs text-harmoni-green-mid">Kapasitas Teoritis</div>
+                  <div className="font-semibold text-harmoni-green">
                     {kapasitasPreview !== null ? `${kapasitasPreview} item` : '—'}
                   </div>
                 </div>
@@ -317,7 +317,7 @@ export default function InputProduksi() {
             {/* Foto Bukti Kerja */}
             <div className="sm:col-span-2">
               <div className="flex items-center gap-2 mb-3">
-                <Camera size={14} className="text-blue-500" />
+                <Camera size={14} className="text-harmoni-green" />
                 <span className="text-sm font-medium text-gray-700">Foto Bukti Kerja</span>
                 <span className="text-xs text-gray-400">(opsional)</span>
               </div>

@@ -12,7 +12,7 @@ function Section({ title, icon: Icon, children, defaultOpen = true }) {
         onClick={() => setOpen(!open)}
       >
         <div className="flex items-center gap-2 font-semibold text-gray-700">
-          <Icon size={16} className="text-blue-500" />
+          <Icon size={16} className="text-harmoni-green" />
           {title}
         </div>
         {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
@@ -92,7 +92,7 @@ function TableMesin() {
                     <div className="text-xs text-gray-400">Maks {m.rpm} RPM · {m.dayaWatt}W {m.keterangan && `· ${m.keterangan}`}</div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="text-gray-400 hover:text-blue-500" onClick={() => setEditId(m.id)}><Pencil size={15} /></button>
+                    <button className="text-gray-400 hover:text-harmoni-green" onClick={() => setEditId(m.id)}><Pencil size={15} /></button>
                     <button className="text-gray-400 hover:text-red-500" onClick={() => hapusMesin(m.id)}><Trash2 size={15} /></button>
                   </div>
                 </div>
@@ -177,7 +177,7 @@ function TableOperator() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="text-gray-400 hover:text-blue-500" onClick={() => setEditId(o.id)}><Pencil size={15} /></button>
+                    <button className="text-gray-400 hover:text-harmoni-green" onClick={() => setEditId(o.id)}><Pencil size={15} /></button>
                     <button className="text-gray-400 hover:text-red-500" onClick={() => hapusOperator(o.id)}><Trash2 size={15} /></button>
                   </div>
                 </div>
@@ -277,7 +277,7 @@ function TableProduk() {
                   <div>
                     <div className="font-medium text-gray-700 text-sm">
                       {p.nama}
-                      <span className="ml-2 text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">{p.tipeBordir}</span>
+                      <span className="ml-2 text-xs bg-harmoni-green-tint text-harmoni-green px-1.5 py-0.5 rounded font-medium">{p.tipeBordir}</span>
                     </div>
                     <div className="text-xs text-gray-400">
                       {labelKategori[p.kategori]} · {p.stitchCount.toLocaleString('id-ID')} stitch
@@ -285,7 +285,7 @@ function TableProduk() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="text-gray-400 hover:text-blue-500" onClick={() => setEditId(p.id)}><Pencil size={15} /></button>
+                    <button className="text-gray-400 hover:text-harmoni-green" onClick={() => setEditId(p.id)}><Pencil size={15} /></button>
                     <button className="text-gray-400 hover:text-red-500" onClick={() => hapusProduk(p.id)}><Trash2 size={15} /></button>
                   </div>
                 </div>
@@ -347,9 +347,9 @@ function FormBenang({ initial, onSave, onCancel }) {
         <p className="text-xs text-gray-400 mt-0.5">{f.tipe === 'bawah' ? 'Bobbin: rata-rata 5–8 m' : 'Atas: rata-rata 10–14 m'}</p>
       </div>
       {preview !== null && (
-        <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-center gap-3 text-sm">
+        <div className="col-span-2 bg-harmoni-green-tint border border-harmoni-green-tint rounded-lg px-3 py-2 flex items-center gap-3 text-sm">
           <span className="text-gray-500">Harga per 1.000 stitch:</span>
-          <strong className="text-blue-700">{formatRupiah(preview)}</strong>
+          <strong className="text-harmoni-green">{formatRupiah(preview)}</strong>
         </div>
       )}
       <div className="col-span-2 flex gap-2">
@@ -396,11 +396,11 @@ function TableBenang() {
                     <div className="font-medium text-gray-700 text-sm">{b.nama}</div>
                     <div className="text-xs text-gray-400">
                       {formatRupiah(b.hargaPerGulungan)}/gulungan · {b.meterPerGulungan.toLocaleString('id-ID')} m · {b.meterPer1000Stitch} m/1.000 stitch
-                      <span className="ml-2 text-blue-600 font-medium">→ {formatRupiah(hargaBenangPer1000(b))}/1.000 stitch</span>
+                      <span className="ml-2 text-harmoni-green font-medium">→ {formatRupiah(hargaBenangPer1000(b))}/1.000 stitch</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="text-gray-400 hover:text-blue-500" onClick={() => setEditId(b.id)}><Pencil size={15} /></button>
+                    <button className="text-gray-400 hover:text-harmoni-green" onClick={() => setEditId(b.id)}><Pencil size={15} /></button>
                     <button className="text-gray-400 hover:text-red-500" onClick={() => hapusBenang(b.id)}><Trash2 size={15} /></button>
                   </div>
                 </div>
@@ -445,22 +445,22 @@ function KalkulatorGulungan({ onApply }) {
     : null
 
   return (
-    <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
-      <div className="text-sm font-medium text-blue-700">Hitung dari harga gulungan benang</div>
+    <div className="col-span-2 bg-harmoni-green-tint border border-harmoni-green-tint rounded-xl p-4 space-y-3">
+      <div className="text-sm font-medium text-harmoni-green">Hitung dari harga gulungan benang</div>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="label text-blue-700">Harga per gulungan (Rp)</label>
+          <label className="label text-harmoni-green">Harga per gulungan (Rp)</label>
           <input className="input" type="number" placeholder="cth: 15000"
             value={g.harga} onChange={(e) => setG({ ...g, harga: e.target.value })} />
         </div>
         <div>
-          <label className="label text-blue-700">Panjang benang (meter)</label>
+          <label className="label text-harmoni-green">Panjang benang (meter)</label>
           <input className="input" type="number" placeholder="cth: 1000"
             value={g.meter} onChange={(e) => setG({ ...g, meter: e.target.value })} />
           <p className="text-xs text-gray-400 mt-0.5">Tertera di label gulungan</p>
         </div>
         <div>
-          <label className="label text-blue-700">Pemakaian per 1.000 stitch (m)</label>
+          <label className="label text-harmoni-green">Pemakaian per 1.000 stitch (m)</label>
           <input className="input" type="number" step="0.5" placeholder="12"
             value={g.meterPer1000} onChange={(e) => setG({ ...g, meterPer1000: e.target.value })} />
           <p className="text-xs text-gray-400 mt-0.5">Rata-rata bordir: 10–14 m</p>
@@ -469,14 +469,14 @@ function KalkulatorGulungan({ onApply }) {
 
       {hasil && (
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm">
+          <div className="bg-white border border-harmoni-green-tint rounded-lg px-3 py-2 text-sm">
             <span className="text-gray-500">Harga/meter: </span>
             <strong className="text-gray-800">{formatRupiah(hasil.hargaPerMeter)}</strong>
           </div>
-          <ArrowRight size={14} className="text-blue-400 shrink-0" />
-          <div className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm">
+          <ArrowRight size={14} className="text-harmoni-green-mid shrink-0" />
+          <div className="bg-white border border-harmoni-green-tint rounded-lg px-3 py-2 text-sm">
             <span className="text-gray-500">Harga per 1.000 stitch: </span>
-            <strong className="text-blue-700">{formatRupiah(hasil.hargaPer1000Stitch)}</strong>
+            <strong className="text-harmoni-green">{formatRupiah(hasil.hargaPer1000Stitch)}</strong>
           </div>
           <button
             className="btn-primary text-xs py-1.5"
@@ -591,7 +591,7 @@ function GantiPasswordAdmin() {
   return (
     <div>
       <button
-        className="text-sm text-blue-600 hover:underline font-medium"
+        className="text-sm text-harmoni-green hover:underline font-medium"
         onClick={() => { setShow(!show); setMsg(null) }}
       >
         {show ? 'Tutup' : '🔑 Ganti Password Admin'}

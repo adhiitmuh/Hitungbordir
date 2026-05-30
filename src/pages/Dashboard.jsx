@@ -105,13 +105,13 @@ export default function Dashboard() {
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-700">Performa Operator Hari Ini</h2>
-          <Link to="/laporan" className="text-xs text-blue-600 hover:underline">Lihat semua →</Link>
+          <Link to="/laporan" className="text-xs text-harmoni-green hover:underline">Lihat semua →</Link>
         </div>
 
         {ringkasan.rows.length === 0 ? (
           <div className="text-center py-10 text-gray-400 text-sm">
             Belum ada catatan produksi hari ini.{' '}
-            <Link to="/input" className="text-blue-500 hover:underline">Input sekarang</Link>
+            <Link to="/input" className="text-harmoni-green hover:underline">Input sekarang</Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
