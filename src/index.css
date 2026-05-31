@@ -4,28 +4,46 @@
 
 @layer base {
   body {
-    @apply bg-harmoni-beige text-harmoni-black antialiased;
+    background-color: #FBF9D8;
+    color: #2D2D2D;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-harmoni-beige-dark p-4;
+    @apply bg-white rounded-xl shadow-sm border p-4;
+    border-color: #F0EDBB;
   }
   .btn-primary {
-    @apply bg-harmoni-green hover:bg-harmoni-green-mid text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: #1E4645;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: #2A5B5A;
   }
   .btn-secondary {
-    @apply bg-harmoni-beige-dark hover:bg-harmoni-beige text-harmoni-green font-medium px-4 py-2 rounded-lg transition-colors border border-harmoni-beige-dark;
+    @apply font-medium px-4 py-2 rounded-lg transition-colors border;
+    background-color: #F0EDBB;
+    border-color: #F0EDBB;
+    color: #1E4645;
+  }
+  .btn-secondary:hover {
+    background-color: #FBF9D8;
   }
   .btn-danger {
     @apply bg-red-50 hover:bg-red-100 text-red-600 font-medium px-4 py-2 rounded-lg transition-colors;
   }
   .input {
-    @apply w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-harmoni-green focus:border-transparent bg-white;
+    @apply w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-transparent;
+  }
+  .input:focus {
+    box-shadow: 0 0 0 2px #1E4645;
   }
   .label {
-    @apply block text-sm font-medium text-harmoni-black mb-1;
+    @apply block text-sm font-medium mb-1;
+    color: #2D2D2D;
   }
   .badge-good {
     @apply inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full;
