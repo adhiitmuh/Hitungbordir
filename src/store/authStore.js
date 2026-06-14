@@ -1,47 +1,46 @@
 import { create } from 'zustand'
-
-const SESSION_KEY = 'hb_session'
-
-function loadSession() {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY)
-    return raw ? JSON.parse(raw) : { role: null, operatorId: null, nama: null }
-  } catch {
-    return { role: null, operatorId: null, nama: null }
-  }
-}
-
-function saveSession(data) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(data))
-}
-
-function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY)
-}
+import { auth, db } from '../firebase'
 
 const useAuthStore = create((set) => ({
-  ...loadSession(),
+  role:       null,
+  operatorId: null,
+  nama:       null,
+  loading:    true,
+  authError:  null,
 
-  loginAdmin: (passwordInput, adminPassword) => {
-    if (passwordInput === adminPassword) {
-      const session = { role: 'admin', operatorId: null, nama: 'Admin' }
-      saveSession(session)
-      set(session)
-      return true
-    }
-    return false
+  init: () => {
+    const unsub = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        set((state) => ({ role: null, operatorId: null, nama: null, loading: false, authError: state.authError }))
+        return
+      }
+      try {
+        const snap = await db.collection('users').doc(user.uid).get()
+        const data = snap.data()
+        const isOwner = data?.role === 'owner'
+        if (!snap.exists || !data?.aktif || (!isOwner && !data?.apps?.hitungbordir?.akses)) {
+          await auth.signOut()
+          set({ role: null, operatorId: null, nama: null, loading: false, authError: 'Akun tidak memiliki akses ke Harmoni Bordir.' })
+          return
+        }
+        const isAdmin = isOwner || data.role === 'admin'
+        set({
+          role:       isAdmin ? 'admin' : 'staff',
+          operatorId: user.uid,
+          nama:       data.nama,
+          loading:    false,
+          authError:  null,
+        })
+      } catch {
+        set({ role: null, operatorId: null, nama: null, loading: false, authError: 'Gagal memverifikasi akun.' })
+      }
+    })
+    return unsub
   },
 
-  loginStaff: (operatorId, nama) => {
-    const session = { role: 'staff', operatorId, nama }
-    saveSession(session)
-    set(session)
-  },
+  login: (email, password) => auth.signInWithEmailAndPassword(email, password),
 
-  logout: () => {
-    clearSession()
-    set({ role: null, operatorId: null, nama: null })
-  },
+  logout: () => auth.signOut(),
 }))
 
 export default useAuthStore

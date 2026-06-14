@@ -1,8 +1,6 @@
-/**
- * Kompres gambar ke JPEG sebelum disimpan.
- * Max 900px lebar, kualitas 0.78 → ukuran file ~100–200KB.
- */
-export function kompresiFoto(file, maxWidth = 900, quality = 0.78) {
+import { storage, auth } from '../firebase'
+
+function kompressiBlob(file, maxWidth = 900, quality = 0.78) {
   return new Promise((resolve, reject) => {
     if (!file) { resolve(null); return }
     const img = new Image()
@@ -14,9 +12,18 @@ export function kompresiFoto(file, maxWidth = 900, quality = 0.78) {
       canvas.height = Math.round(img.height * ratio)
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
       URL.revokeObjectURL(url)
-      resolve(canvas.toDataURL('image/jpeg', quality))
+      canvas.toBlob(resolve, 'image/jpeg', quality)
     }
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Gagal membaca gambar')) }
     img.src = url
   })
+}
+
+export async function uploadFoto(file) {
+  const blob = await kompressiBlob(file)
+  const uid  = auth.currentUser?.uid ?? 'anon'
+  const path = `bordir/photos/${uid}/${Date.now()}.jpg`
+  const storageRef = storage.ref(path)
+  await storageRef.put(blob)
+  return storageRef.getDownloadURL()
 }
