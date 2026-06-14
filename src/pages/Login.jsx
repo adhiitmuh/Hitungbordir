@@ -1,134 +1,136 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import useAuthStore from '../store/authStore'
-import useAppStore from '../store/appStore'
+import logoBeige from '../assets/logo-beige.png'
+
+const PORTAL_URL = 'https://adhiitmuh.github.io/harmoni-indonesia/'
 
 export default function Login() {
-  const { operator, settings } = useAppStore()
-  const { loginAdmin, loginStaff } = useAuthStore()
+  const { login, authError } = useAuthStore()
   const navigate = useNavigate()
 
-  const [tab, setTab] = useState('staff') // 'staff' | 'admin'
-  const [operatorId, setOperatorId] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
 
-  function handleStaffLogin(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (!operatorId) { setError('Pilih nama kamu terlebih dahulu.'); return }
-    const op = operator.find((o) => o.id === operatorId)
-    loginStaff(operatorId, op?.nama ?? 'Staff')
-    navigate('/input')
+    setError('')
+    setLoading(true)
+    try {
+      await login(email.trim(), password)
+      navigate('/')
+    } catch (err) {
+      const code = err?.code ?? ''
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        setError('Email atau password salah.')
+      } else if (code === 'auth/too-many-requests') {
+        setError('Terlalu banyak percobaan. Coba lagi nanti.')
+      } else {
+        setError('Gagal masuk. Coba lagi.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function handleAdminLogin(e) {
-    e.preventDefault()
-    const ok = loginAdmin(password, settings.adminPassword ?? 'admin123')
-    if (ok) {
-      navigate('/')
-    } else {
-      setError('Password salah.')
-      setPassword('')
-    }
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-harmoni-green-dark to-harmoni-green flex items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <img src={logoBeige} alt="harmoni" style={{ width: '130px', display: 'block', margin: '0 auto 4px' }} />
+            <div className="text-harmoni-green-tint text-sm mt-1 opacity-80 tracking-widest uppercase">Bordir</div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="text-4xl mb-3">🚫</div>
+            <div className="font-bold text-gray-800 mb-2">Tidak Ada Akses</div>
+            <p className="text-sm text-gray-500 mb-6">{authError}</p>
+            <a href={PORTAL_URL} className="btn-primary w-full block text-center">
+              Kembali ke Portal →
+            </a>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-harmoni-green-dark to-harmoni-green flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-3xl font-bold text-harmoni-beige tracking-wide">Harmoni Bordir</div>
           <div className="text-harmoni-green-tint text-sm mt-1 opacity-80">Kalkulator Produksi Bordir</div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Tab */}
-          <div className="flex border-b border-gray-100">
-            <button
-              className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === 'staff' ? 'text-harmoni-green border-b-2 border-harmoni-green' : 'text-gray-400 hover:text-gray-600'}`}
-              onClick={() => { setTab('staff'); setError('') }}
-            >
-              <User size={14} className="inline mr-1.5" />
-              Masuk sebagai Staff
-            </button>
-            <button
-              className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === 'admin' ? 'text-harmoni-green border-b-2 border-harmoni-green' : 'text-gray-400 hover:text-gray-600'}`}
-              onClick={() => { setTab('admin'); setError('') }}
-            >
-              <Lock size={14} className="inline mr-1.5" />
-              Masuk sebagai Admin
-            </button>
-          </div>
+        <div className="bg-white rounded-2xl shadow-xl p-6">
+          <p className="text-sm text-gray-500 mb-5 text-center">
+            Masuk dengan akun portal Harmoni kamu
+          </p>
 
-          <div className="p-6">
-            {/* Error */}
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2.5 mb-4">
-                <AlertCircle size={15} className="shrink-0" />
-                {error}
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2.5 mb-4">
+              <AlertCircle size={15} className="shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="label">Email</label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  className="input pl-9"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@harmoni.com"
+                  autoComplete="email"
+                  required
+                />
               </div>
-            )}
+            </div>
 
-            {tab === 'staff' ? (
-              <form onSubmit={handleStaffLogin} className="space-y-4">
-                <div>
-                  <label className="label">Nama Kamu</label>
-                  {operator.length === 0 ? (
-                    <p className="text-sm text-amber-600 bg-amber-50 rounded-lg px-3 py-2.5">
-                      Belum ada operator. Minta Admin untuk menambahkan nama kamu di Master Data.
-                    </p>
-                  ) : (
-                    <select
-                      className="input"
-                      value={operatorId}
-                      onChange={(e) => { setOperatorId(e.target.value); setError('') }}
-                    >
-                      <option value="">— pilih nama —</option>
-                      {operator.map((o) => (
-                        <option key={o.id} value={o.id}>{o.nama}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+            <div>
+              <label className="label">Password</label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  className="input pl-9 pr-10"
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password portal kamu"
+                  autoComplete="current-password"
+                  required
+                />
                 <button
-                  type="submit"
-                  className="btn-primary w-full"
-                  disabled={operator.length === 0}
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  onClick={() => setShowPass(!showPass)}
                 >
-                  Masuk
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
-              </form>
-            ) : (
-              <form onSubmit={handleAdminLogin} className="space-y-4">
-                <div>
-                  <label className="label">Password Admin</label>
-                  <div className="relative">
-                    <input
-                      className="input pr-10"
-                      type={showPass ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setError('') }}
-                      placeholder="Masukkan password"
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      onClick={() => setShowPass(!showPass)}
-                    >
-                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Default: admin123 (ganti di Master Data)</p>
-                </div>
-                <button type="submit" className="btn-primary w-full">
-                  Masuk sebagai Admin
-                </button>
-              </form>
-            )}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full disabled:opacity-60"
+            >
+              {loading ? 'Memverifikasi...' : 'Masuk'}
+            </button>
+          </form>
+
+          <div className="mt-4 text-center">
+            <a href={PORTAL_URL} className="text-xs text-gray-400 hover:text-gray-600">
+              Buka Portal Harmoni →
+            </a>
           </div>
         </div>
       </div>

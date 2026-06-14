@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import useAuthStore from '../store/authStore'
+import logoBeige from '../assets/logo-beige.png'
 
 const allNavItems = [
   { to: '/',        icon: LayoutDashboard, label: 'Dashboard',       adminOnly: true },
@@ -47,8 +48,8 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-harmoni-green-dark">
           <div>
-            <div className="font-bold text-lg leading-tight tracking-wide">Harmoni Bordir</div>
-            <div className="text-harmoni-green-tint text-xs opacity-80">Kalkulator Produksi</div>
+            <img src={logoBeige} alt="harmoni" style={{ width: '110px', display: 'block', marginBottom: '2px' }} />
+            <div className="text-harmoni-green-tint text-xs opacity-80 tracking-widest uppercase">Bordir</div>
           </div>
           <button className="lg:hidden text-harmoni-green-tint" onClick={() => setSidebarOpen(false)}>
             <X size={20} />
