@@ -128,15 +128,22 @@ export default function KalkulasiModal() {
   }, [p, m, jamKerja, produksiAktual, tarif, bAtas, bBawah, benangManual, gaji, overhead, adaBenangMaster])
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h1 className="text-xl font-bold text-gray-800">Kalkulasi Modal</h1>
+    <div className="space-y-5 max-w-2xl">
+      <div>
+        <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#034543', opacity: 0.6 }}>
+          Estimasi Biaya
+        </div>
+        <h1 style={{ color: '#282828' }}>Kalkulasi Modal</h1>
+      </div>
 
       {/* Input */}
       <div className="card space-y-4">
-        <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-          <Calculator size={16} className="text-harmoni-green" />
-          Parameter Kalkulasi
-        </h2>
+        <div className="flex items-center gap-2 pb-3 mb-1" style={{ borderBottom: '1px solid #EDE9A8' }}>
+          <div className="p-1.5 rounded-lg" style={{ background: '#EBF4F3' }}>
+            <Calculator size={14} style={{ color: '#034543' }} />
+          </div>
+          <h2 style={{ color: '#282828' }}>Parameter Kalkulasi</h2>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
@@ -254,7 +261,10 @@ export default function KalkulasiModal() {
       {/* Hasil */}
       {hasil && p ? (
         <div className="card">
-          <h2 className="font-semibold text-gray-700 mb-1">Hasil Kalkulasi: {p.nama}</h2>
+          <div className="pb-3 mb-4" style={{ borderBottom: '1px solid #EDE9A8' }}>
+            <div className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: '#034543', opacity: 0.6 }}>Hasil</div>
+            <h2 style={{ color: '#282828' }}>{p.nama}</h2>
+          </div>
           <p className="text-xs text-gray-400 mb-4">
             {p.tipeBordir} · {p.stitchCount.toLocaleString('id-ID')} stitch · {formatAngka(hasil.waktuMenit, 2)} menit/item
             · kapasitas teoritis: {hasil.kapasitasTeoritis} item/shift
@@ -359,8 +369,10 @@ export default function KalkulasiModal() {
           )}
         </div>
       ) : (
-        <div className="card text-center py-12 text-gray-400 text-sm">
-          Pilih jenis produk untuk melihat kalkulasi modal.
+        <div className="card text-center py-14 rounded-2xl" style={{ background: '#FFFBD5', border: '1px solid #EDE9A8' }}>
+          <div className="text-sm font-medium" style={{ color: '#034543', opacity: 0.5 }}>
+            Pilih jenis produk untuk melihat kalkulasi modal.
+          </div>
         </div>
       )}
     </div>

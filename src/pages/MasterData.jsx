@@ -7,15 +7,16 @@ function Section({ title, icon: Icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="card">
-      <button
-        className="w-full flex items-center justify-between"
-        onClick={() => setOpen(!open)}
-      >
-        <div className="flex items-center gap-2 font-semibold text-gray-700">
-          <Icon size={16} className="text-harmoni-green" />
-          {title}
+      <button className="w-full flex items-center justify-between" onClick={() => setOpen(!open)}>
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg" style={{ background: '#EBF4F3' }}>
+            <Icon size={14} style={{ color: '#034543' }} />
+          </div>
+          <span className="font-bold text-sm" style={{ color: '#282828' }}>{title}</span>
         </div>
-        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        {open
+          ? <ChevronUp size={16} style={{ color: '#9CA3AF' }} />
+          : <ChevronDown size={16} style={{ color: '#9CA3AF' }} />}
       </button>
       {open && <div className="mt-4">{children}</div>}
     </div>
@@ -27,7 +28,7 @@ function FormMesin({ initial, onSave, onCancel }) {
   const [f, setF] = useState(initial ?? { nama: '', rpm: '', dayaWatt: '', keterangan: '' })
   const ok = f.nama && f.rpm && f.dayaWatt
   return (
-    <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-xl p-4 mt-3">
+    <div className="grid grid-cols-2 gap-3 rounded-2xl p-4 mt-3" style={{ background: '#F5F2BE', border: '1px solid #EDE9A8' }}>
       <div className="col-span-2 sm:col-span-1">
         <label className="label">Nama Mesin *</label>
         <input className="input" value={f.nama} onChange={(e) => setF({ ...f, nama: e.target.value })} placeholder="cth: Mesin 1 - Brother" />
@@ -86,7 +87,7 @@ function TableMesin() {
                   onCancel={() => setEditId(null)}
                 />
               ) : (
-                <div className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50">
+                <div className="flex items-center justify-between rounded-xl px-4 py-3 hover:bg-harmoni-beige transition-colors" style={{ border: '1px solid #EDE9A8' }}>
                   <div>
                     <div className="font-medium text-gray-700 text-sm">{m.nama}</div>
                     <div className="text-xs text-gray-400">Maks {m.rpm} RPM · {m.dayaWatt}W {m.keterangan && `· ${m.keterangan}`}</div>
@@ -111,7 +112,7 @@ function FormOperator({ initial, onSave, onCancel }) {
   const [f, setF] = useState(initial ?? { nama: '', mesinId: '', gajiHarian: '' })
   const ok = f.nama && f.gajiHarian
   return (
-    <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-xl p-4 mt-3">
+    <div className="grid grid-cols-2 gap-3 rounded-2xl p-4 mt-3" style={{ background: '#F5F2BE', border: '1px solid #EDE9A8' }}>
       <div className="col-span-2 sm:col-span-1">
         <label className="label">Nama Operator *</label>
         <input className="input" value={f.nama} onChange={(e) => setF({ ...f, nama: e.target.value })} placeholder="cth: Budi" />
@@ -169,7 +170,7 @@ function TableOperator() {
                   onCancel={() => setEditId(null)}
                 />
               ) : (
-                <div className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50">
+                <div className="flex items-center justify-between rounded-xl px-4 py-3 hover:bg-harmoni-beige transition-colors" style={{ border: '1px solid #EDE9A8' }}>
                   <div>
                     <div className="font-medium text-gray-700 text-sm">{o.nama}</div>
                     <div className="text-xs text-gray-400">
@@ -197,7 +198,7 @@ function FormProduk({ initial, onSave, onCancel }) {
   })
   const ok = f.nama && f.stitchCount
   return (
-    <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-xl p-4 mt-3">
+    <div className="grid grid-cols-2 gap-3 rounded-2xl p-4 mt-3" style={{ background: '#F5F2BE', border: '1px solid #EDE9A8' }}>
       <div className="col-span-2">
         <label className="label">Nama Produk *</label>
         <input className="input" value={f.nama} onChange={(e) => setF({ ...f, nama: e.target.value })} placeholder="cth: Lambang Sekolah A" />
@@ -273,7 +274,7 @@ function TableProduk() {
                   onCancel={() => setEditId(null)}
                 />
               ) : (
-                <div className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50">
+                <div className="flex items-center justify-between rounded-xl px-4 py-3 hover:bg-harmoni-beige transition-colors" style={{ border: '1px solid #EDE9A8' }}>
                   <div>
                     <div className="font-medium text-gray-700 text-sm">
                       {p.nama}
@@ -311,7 +312,7 @@ function FormBenang({ initial, onSave, onCancel }) {
     : null
 
   return (
-    <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-xl p-4 mt-3">
+    <div className="grid grid-cols-2 gap-3 rounded-2xl p-4 mt-3" style={{ background: '#F5F2BE', border: '1px solid #EDE9A8' }}>
       <div className="col-span-2">
         <label className="label">Nama Benang / Merk *</label>
         <input className="input" value={f.nama}
@@ -391,7 +392,7 @@ function TableBenang() {
                   onCancel={() => setEditId(null)}
                 />
               ) : (
-                <div className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50">
+                <div className="flex items-center justify-between rounded-xl px-4 py-3 hover:bg-harmoni-beige transition-colors" style={{ border: '1px solid #EDE9A8' }}>
                   <div>
                     <div className="font-medium text-gray-700 text-sm">{b.nama}</div>
                     <div className="text-xs text-gray-400">
@@ -631,7 +632,12 @@ function GantiPasswordAdmin() {
 export default function MasterData() {
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-800">Master Data</h1>
+      <div>
+        <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#034543', opacity: 0.6 }}>
+          Konfigurasi
+        </div>
+        <h1 style={{ color: '#282828' }}>Master Data</h1>
+      </div>
 
       <Section title="Mesin Bordir" icon={Cpu}>
         <TableMesin />

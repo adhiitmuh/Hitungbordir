@@ -16,7 +16,7 @@ function badgeStatus(status) {
 }
 
 export default function Dashboard() {
-  const { catatanProduksi, mesin, operator, produk, settings, getMesinById, getProdukById, getOperatorById } = useAppStore()
+  const { catatanProduksi, mesin, operator, produk, getMesinById, getProdukById, getOperatorById } = useAppStore()
 
   const today = new Date().toISOString().slice(0, 10)
   const catatanHariIni = catatanProduksi.filter((c) => c.tanggal === today)
@@ -33,9 +33,7 @@ export default function Dashboard() {
       const aktifMin = hitungWaktuAktif(c.jamMulai, c.jamSelesai, c.menitBerhenti)
       const jamEfektif = aktifMin > 0 ? aktifMin / 60 : resolveJamKerja(c)
       const utilisasi = totalMin > 0 ? hitungUtilisasi(aktifMin, totalMin) : null
-      const kapasitas = p && m
-        ? hitungKapasitasTeoritis(jamEfektif, speed, p.stitchCount)
-        : 0
+      const kapasitas = p && m ? hitungKapasitasTeoritis(jamEfektif, speed, p.stitchCount) : 0
       const efisiensi = hitungEfisiensi(c.aktual, kapasitas)
       totalAktual += c.aktual
       totalTarget += kapasitas
@@ -48,24 +46,27 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Page header */}
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Dashboard</h1>
+          <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#034543', opacity: 0.6 }}>
+            Harmoni Bordir
+          </div>
+          <h1 className="text-2xl font-bold" style={{ color: '#282828' }}>Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <Link to="/input" className="btn-primary flex items-center gap-2 text-sm">
+        <Link to="/input" className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap">
           <ClipboardList size={15} />
           Input Produksi
         </Link>
       </div>
 
-      {/* Stat cards */}
+      {/* Stat cards — produksi hari ini */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          label="Total Produksi Hari Ini"
+          label="Produksi Hari Ini"
           value={formatAngka(ringkasan.totalAktual, 0)}
           sub="item selesai"
           icon={TrendingUp}
@@ -86,15 +87,15 @@ export default function Dashboard() {
           color="red"
         />
         <StatCard
-          label="Mesin Aktif Hari Ini"
+          label="Mesin Aktif"
           value={new Set(catatanHariIni.map((c) => c.mesinId)).size}
-          sub={`dari ${mesin.length} mesin`}
+          sub={`dari ${mesin.length} mesin terdaftar`}
           icon={Cpu}
           color="purple"
         />
       </div>
 
-      {/* Ringkasan Setup */}
+      {/* Ringkasan master data */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="Total Mesin" value={mesin.length} icon={Cpu} color="blue" />
         <StatCard label="Total Operator" value={operator.length} icon={Users} color="green" />
@@ -103,66 +104,67 @@ export default function Dashboard() {
 
       {/* Tabel performa hari ini */}
       <div className="card">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-700">Performa Operator Hari Ini</h2>
-          <Link to="/laporan" className="text-xs text-harmoni-green hover:underline">Lihat semua →</Link>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: '#034543', opacity: 0.6 }}>Hari Ini</div>
+            <h2 className="font-bold" style={{ color: '#282828' }}>Performa Operator</h2>
+          </div>
+          <Link to="/laporan" className="text-xs font-semibold hover:underline" style={{ color: '#034543' }}>
+            Lihat semua →
+          </Link>
         </div>
 
         {ringkasan.rows.length === 0 ? (
-          <div className="text-center py-10 text-gray-400 text-sm">
-            Belum ada catatan produksi hari ini.{' '}
-            <Link to="/input" className="text-harmoni-green hover:underline">Input sekarang</Link>
+          <div className="text-center py-12 rounded-xl" style={{ background: '#FFFBD5' }}>
+            <div className="text-sm font-medium" style={{ color: '#034543', opacity: 0.6 }}>Belum ada catatan produksi hari ini.</div>
+            <Link to="/input" className="text-sm font-semibold hover:underline mt-1 block" style={{ color: '#034543' }}>
+              Input sekarang →
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
-                  <th className="pb-2 font-medium">Operator</th>
-                  <th className="pb-2 font-medium">Mesin</th>
-                  <th className="pb-2 font-medium">Produk</th>
-                  <th className="pb-2 font-medium text-right">Speed</th>
-                  <th className="pb-2 font-medium text-right">Stitch</th>
-                  <th className="pb-2 font-medium text-right">Target</th>
-                  <th className="pb-2 font-medium text-right">Aktual</th>
-                  <th className="pb-2 font-medium text-right">Reject</th>
-                  <th className="pb-2 font-medium text-right">Utilisasi</th>
-                  <th className="pb-2 font-medium text-right">Efisiensi</th>
-                  <th className="pb-2 font-medium">Status</th>
+                <tr className="text-left text-xs border-b" style={{ borderColor: '#EDE9A8' }}>
+                  {['Operator','Mesin','Produk','Speed','Stitch','Target','Aktual','Reject','Utilisasi','Efisiensi','Status'].map((h, i) => (
+                    <th key={h} className={`pb-3 font-semibold uppercase tracking-wide ${i > 3 ? 'text-right' : ''}`}
+                      style={{ color: '#034543', opacity: 0.6, fontSize: '0.65rem' }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody>
                 {ringkasan.rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="py-2.5 font-medium text-gray-700">{row.operator?.nama ?? '-'}</td>
-                    <td className="py-2.5 text-gray-500">{row.mesin?.nama ?? '-'}</td>
-                    <td className="py-2.5">
-                      <span className="text-gray-700">{row.produk?.nama ?? '-'}</span>
-                      {row.produk && (
-                        <span className="ml-1 text-xs text-gray-400">
-                          ({row.produk.tipeBordir})
-                        </span>
-                      )}
+                  <tr key={row.id} className="border-b hover:bg-harmoni-beige transition-colors"
+                    style={{ borderColor: '#F5F2BE' }}>
+                    <td className="py-3 font-semibold" style={{ color: '#282828' }}>{row.operator?.nama ?? '-'}</td>
+                    <td className="py-3 text-gray-500">{row.mesin?.nama ?? '-'}</td>
+                    <td className="py-3">
+                      <span style={{ color: '#282828' }}>{row.produk?.nama ?? '-'}</span>
+                      {row.produk && <span className="ml-1 text-xs text-gray-400">({row.produk.tipeBordir})</span>}
                     </td>
-                    <td className="py-2.5 text-right text-gray-600">
+                    <td className="py-3 text-right text-gray-600">
                       {(row.kecepatan || row.mesin?.rpm) ?? '-'}
                       {row.mesin && row.kecepatan && row.kecepatan < row.mesin.rpm && (
                         <span className="ml-1 text-amber-400 text-xs">↓</span>
                       )}
                     </td>
-                    <td className="py-2.5 text-right text-gray-500 text-xs">
+                    <td className="py-3 text-right text-gray-400 text-xs">
                       {row.produk?.stitchCount?.toLocaleString('id-ID') ?? '-'}
                     </td>
-                    <td className="py-2.5 text-right text-gray-500">{row.kapasitas}</td>
-                    <td className="py-2.5 text-right font-medium text-gray-800">{row.aktual}</td>
-                    <td className="py-2.5 text-right text-red-500">{row.reject ?? 0}</td>
-                    <td className="py-2.5 text-right">
+                    <td className="py-3 text-right text-gray-400">{row.kapasitas}</td>
+                    <td className="py-3 text-right font-bold" style={{ color: '#282828' }}>{row.aktual}</td>
+                    <td className="py-3 text-right text-red-500">{row.reject ?? 0}</td>
+                    <td className="py-3 text-right">
                       {row.utilisasi !== null
-                        ? <span className={row.utilisasi >= 75 ? 'text-green-600 font-medium' : row.utilisasi >= 60 ? 'text-amber-500' : 'text-red-500 font-medium'}>{formatAngka(row.utilisasi)}%</span>
+                        ? <span className={`font-semibold ${row.utilisasi >= 75 ? 'text-green-600' : row.utilisasi >= 60 ? 'text-amber-500' : 'text-red-500'}`}>
+                            {formatAngka(row.utilisasi)}%
+                          </span>
                         : <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="py-2.5 text-right font-medium">{formatAngka(row.efisiensi)}%</td>
-                    <td className="py-2.5">{badgeStatus(row.status)}</td>
+                    <td className="py-3 text-right font-semibold" style={{ color: '#282828' }}>{formatAngka(row.efisiensi)}%</td>
+                    <td className="py-3">{badgeStatus(row.status)}</td>
                   </tr>
                 ))}
               </tbody>

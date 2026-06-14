@@ -421,9 +421,12 @@ export default function LaporanOperator() {
   if (catatanProduksi.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-gray-800">Laporan Operator</h1>
-        <div className="card text-center py-16 text-gray-400 text-sm">
-          Belum ada data produksi. Mulai dengan <a href="/input" className="text-harmoni-green hover:underline">Input Produksi</a>.
+        <h1 style={{ color: '#282828' }}>Laporan Operator</h1>
+        <div className="card text-center py-16 rounded-2xl" style={{ background: '#FFFBD5', border: '1px solid #EDE9A8' }}>
+          <div className="text-sm font-medium" style={{ color: '#034543', opacity: 0.5 }}>
+            Belum ada data produksi. Mulai dengan{' '}
+            <a href="/input" className="font-semibold hover:underline" style={{ color: '#034543' }}>Input Produksi</a>.
+          </div>
         </div>
       </div>
     )
@@ -432,12 +435,20 @@ export default function LaporanOperator() {
   return (
     <div className="space-y-5">
       {/* Header + kontrol */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-gray-800">Laporan Operator</h1>
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#034543', opacity: 0.6 }}>
+            Analisis Kinerja
+          </div>
+          <h1 style={{ color: '#282828' }}>Laporan Operator</h1>
+        </div>
+        <div className="flex rounded-xl overflow-hidden text-sm" style={{ border: '1px solid #EDE9A8' }}>
           {RENTANG.map((r, i) => (
             <button key={r.hari} onClick={() => setRentangIdx(i)}
-              className={`px-3 py-1.5 ${rentangIdx === i ? 'bg-harmoni-green text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+              className="px-3 py-1.5 text-sm font-semibold transition-colors"
+              style={rentangIdx === i
+                ? { background: '#034543', color: '#fff' }
+                : { background: '#fff', color: '#6B7280' }}>
               {r.label}
             </button>
           ))}
@@ -453,14 +464,16 @@ export default function LaporanOperator() {
       )}
 
       {/* Tab */}
-      <div className="flex border-b border-gray-200 gap-1">
+      <div className="flex gap-1" style={{ borderBottom: '2px solid #EDE9A8' }}>
         {[
           { key: 'ringkasan', label: 'Ringkasan' },
           { key: 'evaluasi',  label: 'Evaluasi Kinerja' },
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setActiveTab(key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px
-              ${activeTab === key ? 'border-harmoni-green text-harmoni-green' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            className="px-4 py-2 text-sm font-semibold transition-colors -mb-0.5"
+            style={activeTab === key
+              ? { borderBottom: '2px solid #034543', color: '#034543' }
+              : { borderBottom: '2px solid transparent', color: '#9CA3AF' }}>
             {label}
           </button>
         ))}
