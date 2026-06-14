@@ -1,12 +1,7 @@
 import { useRef, useState } from 'react'
 import { Camera, X, ZoomIn } from 'lucide-react'
-import { kompresiFoto } from '../utils/imageUtils'
+import { uploadFoto } from '../utils/imageUtils'
 
-/**
- * Upload satu foto dengan preview.
- * value  = base64 string atau null
- * onChange(base64 | null)
- */
 export default function FotoUpload({ label, value, onChange, disabled }) {
   const inputRef = useRef()
   const [lightbox, setLightbox] = useState(false)
@@ -17,10 +12,10 @@ export default function FotoUpload({ label, value, onChange, disabled }) {
     if (!file) return
     setLoading(true)
     try {
-      const b64 = await kompresiFoto(file)
-      onChange(b64)
+      const url = await uploadFoto(file)
+      onChange(url)
     } catch {
-      alert('Gagal memproses foto.')
+      alert('Gagal upload foto.')
     } finally {
       setLoading(false)
       e.target.value = ''
