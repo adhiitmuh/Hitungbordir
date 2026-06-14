@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 
 const useAuthStore = create((set) => ({
@@ -9,17 +11,17 @@ const useAuthStore = create((set) => ({
   authError:  null,
 
   init: () => {
-    const unsub = auth.onAuthStateChanged(async (user) => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         set((state) => ({ role: null, operatorId: null, nama: null, loading: false, authError: state.authError }))
         return
       }
       try {
-        const snap = await db.collection('users').doc(user.uid).get()
+        const snap = await getDoc(doc(db, 'users', user.uid))
         const data = snap.data()
         const isOwner = data?.role === 'owner'
-        if (!snap.exists || !data?.aktif || (!isOwner && !data?.apps?.hitungbordir?.akses)) {
-          await auth.signOut()
+        if (!snap.exists() || !data?.aktif || (!isOwner && !data?.apps?.hitungbordir?.akses)) {
+          await signOut(auth)
           set({ role: null, operatorId: null, nama: null, loading: false, authError: 'Akun tidak memiliki akses ke Harmoni Bordir.' })
           return
         }
@@ -38,9 +40,9 @@ const useAuthStore = create((set) => ({
     return unsub
   },
 
-  login: (email, password) => auth.signInWithEmailAndPassword(email, password),
+  login: (email, password) => signInWithEmailAndPassword(auth, email, password),
 
-  logout: () => auth.signOut(),
+  logout: () => signOut(auth),
 }))
 
 export default useAuthStore

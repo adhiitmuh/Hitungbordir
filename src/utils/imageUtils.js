@@ -1,3 +1,4 @@
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { storage, auth } from '../firebase'
 
 function kompressiBlob(file, maxWidth = 900, quality = 0.78) {
@@ -23,7 +24,7 @@ export async function uploadFoto(file) {
   const blob = await kompressiBlob(file)
   const uid  = auth.currentUser?.uid ?? 'anon'
   const path = `bordir/photos/${uid}/${Date.now()}.jpg`
-  const storageRef = storage.ref(path)
-  await storageRef.put(blob)
-  return storageRef.getDownloadURL()
+  const storageRef = ref(storage, path)
+  await uploadBytes(storageRef, blob)
+  return getDownloadURL(storageRef)
 }
