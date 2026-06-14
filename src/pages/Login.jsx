@@ -62,8 +62,8 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-harmoni-green-dark to-harmoni-green flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-3xl font-bold text-harmoni-beige tracking-wide">Harmoni Bordir</div>
-          <div className="text-harmoni-green-tint text-sm mt-1 opacity-80">Kalkulator Produksi Bordir</div>
+          <img src={logoBeige} alt="harmoni" style={{ width: '130px', display: 'block', margin: '0 auto 4px' }} />
+          <div className="text-harmoni-green-tint text-sm mt-1 opacity-80 tracking-widest uppercase">Bordir</div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-6">
